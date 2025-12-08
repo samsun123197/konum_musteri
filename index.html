@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Genel Müşteri Bilgileri Sorgulama (Görselleştirme API)</title>
+    
+    <style>
+        /* CSS stilleri önceki kodla aynı kalmıştır */
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f4f4f4; color: #333; box-sizing: border-box; overflow-x: hidden; }
+        .container { max-width: 95%; margin: auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); box-sizing: border-box; }
+        h1 { text-align: center; color: #000; margin-bottom: 30px; font-size: 2em; }
+        .search-controls { display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 5px; background-color: #e9e9e9; box-sizing: border-box; }
+        .input-group { flex-grow: 1; box-sizing: border-box; }
+        .input-group label { font-weight: bold; margin-bottom: 5px; display: block; color: #555; }
+        .input-group input[type="text"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 1em; }
+        .button-group { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+        .button-group button { padding: 10px 20px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1em; flex-grow: 1; min-width: 120px; box-sizing: border-box; transition: background-color 0.3s ease; }
+        .button-group button:hover { background-color: #45a049; }
+        #resultsTable { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.85em; }
+        #resultsTable th, #resultsTable td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        #resultsTable th { background-color: #4CAF50; color: white; position: sticky; top: 0; z-index: 1; white-space: nowrap; }
+        #resultsTable tbody tr:nth-child(even) { background-color: #f2f2f2; }
+        #resultsTable tbody tr:hover { background-color: #ddd; }
+        #noResults, #loadingMessage { text-align: center; font-weight: bold; margin-top: 20px; padding: 10px; border-radius: 4px; }
+        #noResults { color: #dc3545; border: 1px solid #dc3545; background-color: #ffe0e0; }
+        #loadingMessage { color: #007bff; background-color: #e0f0ff; }
+        
+        @media (max-width: 768px) {
+            .container { max-width: 100%; }
+            #resultsTable { font-size: 0.75em; }
+        }
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            .container { padding: 15px; }
+            h1 { font-size: 1.6em; }
+            .button-group { flex-direction: column; align-items: stretch; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Genel Müşteri Bilgileri Sorgulama (CORS Dostu)</h1>
+        
+        <div class="search-controls">
+            <div class="input-group">
+                <label for="musteriKodu">Müşteri Kodu ile Sorgula:</label>
+                <input type="text" id="musteriKodu" placeholder="Müşteri Kodu Girin (örn: 1001)">
+            </div>
+            
+            <div class="button-group">
+                <button onclick="filterByMusteriKodu()">Sorgula</button>
+                <button onclick="clearFilter()">Temizle</button>
+            </div>
+        </div>
+        
+        <p id="loadingMessage">Veriler yükleniyor (Google API üzerinden)...</p>
+        <p id="noResults" style="display:none;">Hiç sonuç bulunamadı.</p>
+        
+        <div style="overflow-x: auto;"> 
+            <table id="resultsTable" style="display:none;">
+                <thead>
+                    <tr>
+                        <th>Müşteri Kodu</th>
+                        <th>Müşteri Adı</th>
+                        <th>Enlem</th>
+                        <th>Boylam</th>
+                        <th>Durumu</th>
+                        <th>Gsm</th>
+                        <th>Kanal</th>
+                        <th>Tip</th>
+                        <th>Alt Tip</th>
+                        <th>Adres</th>
+                        <th>İli</th>
+                        <th>İlçesi</th>
+                        <th>Dolap Sayısı</th>
+                        <th>Rutta mı</th>
+                        <th>Satışa Kapalımı</th>
+                        <th>Bakiye</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script>
+        // *** PROXY VE LIVE SERVER KULLANMAYAN GÖRSELLEŞTİRME API UÇ NOKTASI ***
+        // Bu yöntem, Google'ın veriyi CORS dostu şekilde yayımlamasını sağlar.
+        const VISUALIZATION_API_URL = 'https://docs.google.com/spreadsheets/d/1vRtsbZ2gDpBToYNIyrfwAnlr-g5Gb7VUMDt5WbrplU3Seng9jnJfHL0mdNFddt9SgZsj9uulMttctXE/gviz/tq?tqx=out:csv';
+
+        const TARGET_HEADERS = [
+            "Müşteri Kodu", "Müşteri Adı", "Enlem", "Boylam", "Durumu", "Gsm",
+            "Kanal", "Tip", "Alt Tip", "Adres", "İli", "İlçesi", 
+            "Dolap Sayısı", "Rutta mı", "Satışa Kapalımı", "Bakiye"
+        ];
+        
+        let allData = [];
+        const resultsTable = document.getElementById('resultsTable');
+        const resultsTableBody = resultsTable.querySelector('tbody');
+        const noResultsMessage = document.getElementById('noResults');
+        const loadingMessage = document.getElementById('loadingMessage');
+        const musteriKoduInput = document.getElementById('musteriKodu');
+
+        // Veri Çekme Fonksiyonu
+        async function fetchCSVData() {
+            try {
+                // *** CORS dostu Görselleştirme API'si üzerinden veri çekme ***
+                const response = await fetch(VISUALIZATION_API_URL);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP Hata: ${response.status}. Google Sheets'e erişilemiyor.`);
+                }
+                
+                // Gelen CSV metnini al
+                const csvText = await response.text();
+                
+                // CSV'den veriyi parse et
+                allData = parseCSV(csvText);
+                loadingMessage.style.display = 'none';
+                
+                populateTable(allData); 
+                resultsTable.style.display = 'table';
+
+            } catch (error) {
+                console.error('CSV verisi çekilirken hata oluştu:', error);
+                loadingMessage.textContent = `Hata: Veri yüklenemedi. (${error.message}). Sheets ID'sinin doğru olduğundan emin olun.`;
+                loadingMessage.style.color = '#dc3545';
+            }
+        }
+        
+        // CSV Metnini Yapılandırılmış Veriye Dönüştürme
+        function parseCSV(csv) {
+            // Google Query API çıktısında, ilk satırda başlıklar ve ilk ve son satırlarda bazı meta veriler olabilir.
+            // Bu nedenle, metin temizliğini daha dikkatli yapmamız gerekebilir.
+            // Bu API, veriyi genellikle bir JS fonksiyonu içinde döndürür, bu yüzden temizleme işlemini standart CSV'ye göre yapalım:
+            const lines = csv.split('\n');
+            const headers = lines[0].split(',').map(header => header.trim().replace(/"/g, ''));
+            const parsedData = [];
+            
+            for (let i = 1; i < lines.length; i++) {
+                const currentLine = lines[i].trim();
+                if (currentLine === '') continue;
+                
+                const values = currentLine.split(',');
+                const row = {};
+                for (let j = 0; j < headers.length; j++) {
+                    let headerKey = headers[j];
+                    row[headerKey] = (values[j] ? values[j].trim() : '').replace(/"/g, '');
+                }
+                parsedData.push(row);
+            }
+            return parsedData;
+        }
+
+        // Tabloyu Görüntüleme Fonksiyonu
+        function populateTable(dataToDisplay) {
+            resultsTableBody.innerHTML = '';
+            
+            if (dataToDisplay.length === 0) {
+                noResultsMessage.style.display = 'block';
+                resultsTable.style.display = 'none';
+                noResultsMessage.textContent = "Sorgunuzla eşleşen sonuç bulunamadı.";
+                return;
+            } else {
+                noResultsMessage.style.display = 'none';
+                resultsTable.style.display = 'table';
+            }
+            
+            dataToDisplay.forEach(item => {
+                const row = resultsTableBody.insertRow();
+                
+                TARGET_HEADERS.forEach(header => {
+                    const cellValue = item[header] || ''; 
+                    row.insertCell().textContent = cellValue;
+                });
+            });
+        }
+        
+        // Filtreleme Fonksiyonu
+        function filterByMusteriKodu() {
+            const musteriKodu = musteriKoduInput.value.trim();
+            
+            if (musteriKodu === '') {
+                populateTable(allData);
+                noResultsMessage.style.display = 'none';
+                return;
+            }
+            
+            const filteredData = allData.filter(item =>
+                item["Müşteri Kodu"] && item["Müşteri Kodu"].trim() === musteriKodu
+            );
+            
+            populateTable(filteredData);
+            
+            if (filteredData.length > 0) {
+                noResultsMessage.textContent = `Müşteri Kodu "${musteriKodu}" için ${filteredData.length} kayıt bulundu.`;
+                noResultsMessage.style.display = 'block';
+                noResultsMessage.style.color = '#155724';
+                noResultsMessage.style.backgroundColor = '#d4edda';
+
+            } else {
+                noResultsMessage.textContent = `Müşteri Kodu "${musteriKodu}" için kayıt bulunamadı.`;
+                noResultsMessage.style.color = '#dc3545';
+                noResultsMessage.style.backgroundColor = '#ffe0e0';
+                noResultsMessage.style.display = 'block';
+            }
+        }
+        
+        // Temizleme Fonksiyonu
+        function clearFilter() {
+            musteriKoduInput.value = '';
+            populateTable(allData); 
+            noResultsMessage.style.display = 'none';
+            loadingMessage.style.display = 'none';
+        }
+
+        document.addEventListener('DOMContentLoaded', fetchCSVData);
+    </script>
+</body>
+</html>
