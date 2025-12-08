@@ -161,17 +161,21 @@
                 html += '</tbody></table>';
                 sonucDiv.innerHTML = html;
                 
-                // 4. Haritada gösterme
-                const lat = parseFloat(musteri['Enlem']);
-                const lon = parseFloat(musteri['Boylam']);
+                // 4. Haritada gösterme (Virgül/Nokta düzeltmesi eklendi)
+                const enlemStr = String(musteri['Enlem']).replace(',', '.').trim();
+                const boylamStr = String(musteri['Boylam']).replace(',', '.').trim();
+                
+                const lat = parseFloat(enlemStr);
+                const lon = parseFloat(boylamStr);
 
                 if (!isNaN(lat) && !isNaN(lon) && lat !== 0 && lon !== 0) {
                     // Eğer harita daha önce oluşturulmuşsa, imha et (yeniden yükleme hatasını önler)
                     if (harita) {
                         harita.remove();
                     }
-
-                    harita = L.map('haritaAlani').setView([lat, lon], 13); // Haritayı enlem/boylama ortala ve zoomla
+                    
+                    // Harita alanını başlat
+                    harita = L.map('haritaAlani').setView([lat, lon], 13);
 
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                         attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
