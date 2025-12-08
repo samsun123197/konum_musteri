@@ -221,7 +221,7 @@
                 ciktiAlanlari.forEach(alan => {
                     let deger = musteri[alan] !== undefined && musteri[alan] !== null ? musteri[alan] : '-';
                     
-                    // İstenen dönüşüm (Rutta mı ve Satışa Kapalımı)
+                    // Dönüşümler
                     if (alan === 'Rutta mı' || alan === 'Satışa Kapalımı') {
                         if (deger === 1 || deger === '1' || deger === '1,00') {
                             deger = 'Evet';
@@ -230,10 +230,24 @@
                         }
                     }
 
-                    html += `<tr><td><strong>${alan}</strong></td><td>${deger}</td></tr>`;
+                    // ✨ YENİ: Dolap Sayısı için Detay Linki Ekleme
+                    if (alan === 'Dolap Sayısı') {
+                        const musteriKodu = musteri['Müşteri Kodu'];
+                        // Barkod sorgulama sayfasına müşteri kodunu query parametresi ile iletiyoruz.
+                        const detayLink = `https://samsun123197.github.io/barkod_sorgu/?query=${musteriKodu}`;
+                        
+                        // Custom row generation for Dolap Sayısı
+                        html += `<tr><td><strong>${alan}</strong></td><td>
+                            ${deger} 
+                            <a href="${detayLink}" target="_blank" style="margin-left: 10px; font-weight: bold; color: #dc3545; text-decoration: none;">[Detay]</a>
+                        </td></tr>`;
+                    } else {
+                        // Normal row generation for other fields
+                        html += `<tr><td><strong>${alan}</strong></td><td>${deger}</td></tr>`;
+                    }
                 });
                 
-                // ✨ YENİ: Koordinat Kopyalama Satırı Ekleme ✨
+                // Koordinat Kopyalama Satırı Ekleme
                 if (koordinatMetni !== 'Koordinat Yok/Hatalı') {
                      html += `<tr><td><strong>Kopyalanacak Koordinat</strong></td><td>
                         <span id="koordinatDeger">${koordinatMetni}</span>
@@ -243,7 +257,8 @@
 
                 // Haritada Göster Linki Ekleme
                 if (koordinatMetni !== 'Koordinat Yok/Hatalı') {
-                    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=$${lat},${lon}`;
+                    // Not: Google Haritalar link formatı korunmuştur.
+                    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=$$${lat},${lon}`;
                     html += `<tr><td><strong>Haritada Göster</strong></td><td><a href="${mapsUrl}" target="_blank">Google Haritalar'da Aç (Yeni Sekme)</a></td></tr>`;
                 }
 
