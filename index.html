@@ -173,13 +173,19 @@
             if (eslesenMusteriler.length === 1) {
                 const musteri = eslesenMusteriler[0];
                 
+                // Koordinatları al ve düzelt (Harita ve Haritada Göster linki için)
+                const enlemStr = String(musteri['Enlem']).replace(',', '.').trim();
+                const boylamStr = String(musteri['Boylam']).replace(',', '.').trim();
+                const lat = parseFloat(enlemStr);
+                const lon = parseFloat(boylamStr);
+
                 // 3. Tek sonucu HTML tablo olarak ekrana yazdırma
                 let html = '<table><thead><tr><th>Alan Adı</th><th>Değer</th></tr></thead><tbody>';
                 
                 ciktiAlanlari.forEach(alan => {
                     let deger = musteri[alan] !== undefined && musteri[alan] !== null ? musteri[alan] : '-';
                     
-                    // ✨ İstenen dönüşüm (Rutta mı) - Hem '1'/'0' hem de '1,00'/'0,00' kontrolü
+                    // İstenen dönüşüm (Rutta mı)
                     if (alan === 'Rutta mı') {
                         if (deger === 1 || deger === '1' || deger === '1,00') {
                             deger = 'Evet';
@@ -188,7 +194,7 @@
                         }
                     }
 
-                    // ✨ İstenen dönüşüm (Satışa Kapalımı) - Hem '1'/'0' hem de '1,00'/'0,00' kontrolü
+                    // İstenen dönüşüm (Satışa Kapalımı)
                     if (alan === 'Satışa Kapalımı') {
                         if (deger === 1 || deger === '1' || deger === '1,00') {
                             deger = 'Evet';
@@ -199,17 +205,17 @@
 
                     html += `<tr><td><strong>${alan}</strong></td><td>${deger}</td></tr>`;
                 });
+                
+                // ✨ YENİ: Haritada Göster Linki Ekleme ✨
+                if (!isNaN(lat) && !isNaN(lon) && lat !== 0 && lon !== 0) {
+                    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
+                    html += `<tr><td><strong>Haritada Göster</strong></td><td><a href="${mapsUrl}" target="_blank">Google Haritalar'da Aç (Yeni Sekme)</a></td></tr>`;
+                }
 
                 html += '</tbody></table>';
                 sonucDiv.innerHTML = html;
                 
-                // 4. Haritada gösterme (Koordinat düzeltmesi ile)
-                const enlemStr = String(musteri['Enlem']).replace(',', '.').trim();
-                const boylamStr = String(musteri['Boylam']).replace(',', '.').trim();
-                
-                const lat = parseFloat(enlemStr);
-                const lon = parseFloat(boylamStr);
-
+                // 4. Haritada gösterme (Leaflet)
                 if (!isNaN(lat) && !isNaN(lon) && lat !== 0 && lon !== 0) {
                     if (harita) {
                         harita.remove();
