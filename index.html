@@ -1,37 +1,111 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Müşteri Sorgulama Ekranı</title>
+    <meta charset="UTF-8">
+    <title>Müşteri Bilgi Sorgulama - GitHub Pages</title>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
     <style>
-        /* Sadece görünürlüğü artırmak için basit CSS */
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        strong { font-weight: bold; }
-        #yukleniyor { color: orange; }
-        .hata { color: red; }
+        /* Genel Stil Ayarları */
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            padding: 20px; 
+            background-color: #f4f7f6;
+        }
+        h1 {
+            color: #007bff;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        
+        /* Giriş ve Buton Stilleri */
+        input[type="text"], button {
+            padding: 10px;
+            border-radius: 5px;
+            margin-right: 10px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+        }
+        button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        
+        /* Sonuç Tablosu Stilleri */
+        #sonucAlani table {
+            border: 2px solid #007bff;
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        #sonucAlani th, #sonucAlani td {
+            padding: 12px 15px;
+            border: 1px solid #dee2e6;
+            text-align: left;
+        }
+        #sonucAlani tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        #sonucAlani tr:hover {
+            background-color: #e2e6ea;
+        }
+        #sonucAlani strong {
+            font-weight: bold;
+            color: #333;
+        }
+        
+        /* Durum Mesajları */
+        #yukleniyor { 
+            color: orange; 
+            font-style: italic; 
+        }
+        .hata { 
+            color: red; 
+            font-weight: bold;
+        }
+
+        /* Harita Alanı */
+        #haritaAlani {
+            height: 400px; 
+            margin-top: 30px; 
+            border: 2px solid #007bff; 
+            border-radius: 8px;
+        }
     </style>
 </head>
 <body>
     <h1>Müşteri Bilgi Sorgulama</h1>
     
     <label for="musteriKodu">Müşteri Kodu Girin:</label>
-    <input type="text" id="musteriKodu" placeholder="Müşteri Kodu (Örn: 12345)">
+    <input type="text" id="musteriKodu" placeholder="Müşteri Kodu (Örn: 12345)" onkeypress="if(event.keyCode == 13) sorgula()">
     <button onclick="sorgula()">Sorgula</button>
 
     <p id="yukleniyor">Veriler Google Sheets'ten yükleniyor, lütfen bekleyiniz...</p>
 
     <hr>
 
-    <h2>Sonuç Ekranı</h2>
+    <h2>Sorgu Sonucu</h2>
     <div id="sonucAlani"></div>
+
+    <div id="haritaAlani"></div>
 
     <script>
         // Sizin sağladığınız Google Sheets CSV dışa aktarım URL'si
         const veriDosyasiURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRkONEBGWF-u3K_tU6kNvsHUpO9LUx_ZDUCvy_SCCcjWh0K7jnmGeynwM9XAUwwww/pub?output=csv';
         let tumMusteriler = [];
-
+        let harita = null; // Leaflet harita objesi
+        
         // Müşterinin istediği çıktı alanları (CSV başlıklarınızla eşleşmeli!)
         const ciktiAlanlari = [
             "Müşteri Kodu", "Müşteri Adı", "Enlem", "Boylam", "Durumu", 
@@ -43,15 +117,11 @@
         Papa.parse(veriDosyasiURL, {
             download: true,
             header: true,
-            skipEmptyLines: true, // Boş satırları atla
+            skipEmptyLines: true,
             complete: function(results) {
-                // Veri yüklenince global değişkeni doldur
                 tumMusteriler = results.data;
-                // Yüklenme mesajını kaldır
                 document.getElementById('yukleniyor').style.display = 'none';
                 document.getElementById('sonucAlani').innerHTML = 'Veriler başarıyla yüklendi. Şimdi sorgulama yapabilirsiniz.';
-                
-                console.log("Veri yüklendi, toplam müşteri:", tumMusteriler.length);
             },
             error: function(err, file) {
                 document.getElementById('yukleniyor').innerHTML = `<p class="hata">Veri yüklenirken bir hata oluştu: ${err}</p>`;
@@ -62,19 +132,21 @@
             const kodInput = document.getElementById('musteriKodu');
             const kod = kodInput.value.trim();
             const sonucDiv = document.getElementById('sonucAlani');
+            const haritaDiv = document.getElementById('haritaAlani');
+            
+            // Harita alanını temizle
+            haritaDiv.innerHTML = '';
             
             if (kod === "") {
                 sonucDiv.innerHTML = `<p class="hata">Lütfen bir Müşteri Kodu girin.</p>`;
                 return;
             }
 
-            // Arama yapmadan önce kodu temizle (gereksiz boşlukları sil)
-            const arananKod = kod.toUpperCase(); // Eğer kodlar büyük/küçük harfe duyarlıysa
+            const arananKod = kod.toUpperCase();
 
             sonucDiv.innerHTML = `Müşteri Kodu "${arananKod}" aranıyor...`;
 
             // 2. Müşteri koduna göre arama yapma
-            // Not: CSV dosyanızdaki "Müşteri Kodu" sütun adının birebir eşleştiğinden emin olun.
             const musteri = tumMusteriler.find(m => String(m['Müşteri Kodu']).trim().toUpperCase() === arananKod);
 
             if (musteri) {
@@ -82,17 +154,39 @@
                 let html = '<table><thead><tr><th>Alan Adı</th><th>Değer</th></tr></thead><tbody>';
                 
                 ciktiAlanlari.forEach(alan => {
-                    // Müşteri objesinde o alan varsa (başlık CSV'de var ise)
                     const deger = musteri[alan] !== undefined && musteri[alan] !== null ? musteri[alan] : '-';
-                    
                     html += `<tr><td><strong>${alan}</strong></td><td>${deger}</td></tr>`;
                 });
 
                 html += '</tbody></table>';
                 sonucDiv.innerHTML = html;
+                
+                // 4. Haritada gösterme
+                const lat = parseFloat(musteri['Enlem']);
+                const lon = parseFloat(musteri['Boylam']);
+
+                if (!isNaN(lat) && !isNaN(lon) && lat !== 0 && lon !== 0) {
+                    // Eğer harita daha önce oluşturulmuşsa, imha et (yeniden yükleme hatasını önler)
+                    if (harita) {
+                        harita.remove();
+                    }
+
+                    harita = L.map('haritaAlani').setView([lat, lon], 13); // Haritayı enlem/boylama ortala ve zoomla
+
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    }).addTo(harita);
+                    
+                    // İşaretleyici ekle
+                    L.marker([lat, lon]).addTo(harita)
+                        .bindPopup(`<b>${musteri['Müşteri Adı']}</b><br>Kanal: ${musteri['Kanal']}`).openPopup();
+                } else {
+                    haritaDiv.innerHTML = '<p style="color: gray;">Enlem veya Boylam verisi bu müşteri için eksik/hatalı olduğu için harita gösterilemiyor.</p>';
+                }
 
             } else {
                 sonucDiv.innerHTML = `<p class="hata"><strong>Hata:</strong> "${arananKod}" kodlu müşteri bulunamadı. Lütfen kodu kontrol edin.</p>`;
+                haritaDiv.innerHTML = '';
             }
         }
     </script>
