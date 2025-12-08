@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Genel Müşteri Bilgileri Sorgulama (Görselleştirme API)</title>
+    <title>Genel Müşteri Bilgileri Sorgulama (CORS Hata Çözümü)</title>
     
     <style>
         /* CSS stilleri önceki kodla aynı kalmıştır */
@@ -40,7 +40,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>Genel Müşteri Bilgileri Sorgulama (CORS Dostu)</h1>
+        <h1>Genel Müşteri Bilgileri Sorgulama (Hata Düzeltme)</h1>
         
         <div class="search-controls">
             <div class="input-group">
@@ -54,7 +54,7 @@
             </div>
         </div>
         
-        <p id="loadingMessage">Veriler yükleniyor (Google API üzerinden)...</p>
+        <p id="loadingMessage">Veriler yükleniyor (CORS dostu API üzerinden)...</p>
         <p id="noResults" style="display:none;">Hiç sonuç bulunamadı.</p>
         
         <div style="overflow-x: auto;"> 
@@ -86,9 +86,11 @@
     </div>
     
     <script>
-        // *** PROXY VE LIVE SERVER KULLANMAYAN GÖRSELLEŞTİRME API UÇ NOKTASI ***
-        // Bu yöntem, Google'ın veriyi CORS dostu şekilde yayımlamasını sağlar.
-        const VISUALIZATION_API_URL = 'https://docs.google.com/spreadsheets/d/1vRtsbZ2gDpBToYNIyrfwAnlr-g5Gb7VUMDt5WbrplU3Seng9jnJfHL0mdNFddt9SgZsj9uulMttctXE/gviz/tq?tqx=out:csv';
+        // Yayın Kimliği (Publish ID) URL'den çıkarılmıştır.
+        const PUBLISH_ID = '2PACX-1vRtsbZ2gDpBToYNIyrfwAnlr-g5Gb7VUMDt5WbrplU3Seng9jnJfHL0mdNFddt9SgZsj9uulMttctXE';
+        
+        // sheets.google.com uzantılı, doğrudan CSV çıktısı veren ve CORS dostu olması beklenen URL formatı.
+        const CORS_FRIENDLY_URL = `https://spreadsheets.google.com/tq?tqx=out:csv&key=${PUBLISH_ID}`;
 
         const TARGET_HEADERS = [
             "Müşteri Kodu", "Müşteri Adı", "Enlem", "Boylam", "Durumu", "Gsm",
@@ -106,17 +108,21 @@
         // Veri Çekme Fonksiyonu
         async function fetchCSVData() {
             try {
-                // *** CORS dostu Görselleştirme API'si üzerinden veri çekme ***
-                const response = await fetch(VISUALIZATION_API_URL);
+                // Yeni CORS dostu URL üzerinden veri çekme
+                const response = await fetch(CORS_FRIENDLY_URL);
                 
                 if (!response.ok) {
-                    throw new Error(`HTTP Hata: ${response.status}. Google Sheets'e erişilemiyor.`);
+                    // Eğer 404 veya başka bir hata gelirse mesajı güncelle
+                    throw new Error(`HTTP Hata: ${response.status}. Lütfen Yayın Kimliğinin (Publish ID) doğru olduğundan ve dökümanın web'de yayınlandığından emin olun.`);
                 }
                 
-                // Gelen CSV metnini al
                 const csvText = await response.text();
                 
-                // CSV'den veriyi parse et
+                // Gelen verinin bir HTML hata mesajı olup olmadığını kontrol et
+                if (csvText.startsWith('<!DOCTYPE html>')) {
+                    throw new Error('Yanıt, beklenen CSV yerine bir HTML sayfası (izin hatası olabilir) içeriyor.');
+                }
+                
                 allData = parseCSV(csvText);
                 loadingMessage.style.display = 'none';
                 
@@ -124,17 +130,14 @@
                 resultsTable.style.display = 'table';
 
             } catch (error) {
-                console.error('CSV verisi çekilirken hata oluştu:', error);
-                loadingMessage.textContent = `Hata: Veri yüklenemedi. (${error.message}). Sheets ID'sinin doğru olduğundan emin olun.`;
+                console.error('Veri çekilirken hata oluştu:', error);
+                loadingMessage.textContent = `Hata: Veri yüklenemedi. (${error.message})`;
                 loadingMessage.style.color = '#dc3545';
             }
         }
         
         // CSV Metnini Yapılandırılmış Veriye Dönüştürme
         function parseCSV(csv) {
-            // Google Query API çıktısında, ilk satırda başlıklar ve ilk ve son satırlarda bazı meta veriler olabilir.
-            // Bu nedenle, metin temizliğini daha dikkatli yapmamız gerekebilir.
-            // Bu API, veriyi genellikle bir JS fonksiyonu içinde döndürür, bu yüzden temizleme işlemini standart CSV'ye göre yapalım:
             const lines = csv.split('\n');
             const headers = lines[0].split(',').map(header => header.trim().replace(/"/g, ''));
             const parsedData = [];
@@ -143,6 +146,7 @@
                 const currentLine = lines[i].trim();
                 if (currentLine === '') continue;
                 
+                // CSV'deki virgül ayırıcılarını kullanarak veriyi ayır
                 const values = currentLine.split(',');
                 const row = {};
                 for (let j = 0; j < headers.length; j++) {
