@@ -148,11 +148,10 @@
 
         function sorgula() {
             const kodInput = document.getElementById('musteriKodu');
-            const aramaMetni = kodInput.value.trim().toUpperCase(); // Arama metnini al ve büyük harfe çevir
+            const aramaMetni = kodInput.value.trim().toUpperCase();
             const sonucDiv = document.getElementById('sonucAlani');
             const haritaDiv = document.getElementById('haritaAlani');
             
-            // Harita alanını ve sonuç alanını temizle
             haritaDiv.innerHTML = '';
             
             if (aramaMetni === "") {
@@ -164,11 +163,9 @@
 
             // 2. Müşteri koduna veya adına göre arama yapma
             const eslesenMusteriler = tumMusteriler.filter(m => {
-                // Kontrol edilecek alanları ve değerlerini alıyoruz
                 const kod = String(m['Müşteri Kodu'] || '').toUpperCase();
                 const ad = String(m['Müşteri Adı'] || '').toUpperCase();
                 
-                // Arama metni bu iki alandan herhangi birinde geçiyor mu?
                 return kod.includes(aramaMetni) || ad.includes(aramaMetni);
             });
             
@@ -180,7 +177,26 @@
                 let html = '<table><thead><tr><th>Alan Adı</th><th>Değer</th></tr></thead><tbody>';
                 
                 ciktiAlanlari.forEach(alan => {
-                    const deger = musteri[alan] !== undefined && musteri[alan] !== null ? musteri[alan] : '-';
+                    let deger = musteri[alan] !== undefined && musteri[alan] !== null ? musteri[alan] : '-';
+                    
+                    // ✨ İstenen dönüşüm (Rutta mı)
+                    if (alan === 'Rutta mı') {
+                        if (deger === 1 || deger === '1') {
+                            deger = 'Evet';
+                        } else if (deger === 0 || deger === '0') {
+                            deger = 'Hayır';
+                        }
+                    }
+
+                    // ✨ İstenen dönüşüm (Satışa Kapalımı)
+                    if (alan === 'Satışa Kapalımı') {
+                        if (deger === 1 || deger === '1') {
+                            deger = 'Evet';
+                        } else if (deger === 0 || deger === '0') {
+                            deger = 'Hayır';
+                        }
+                    }
+
                     html += `<tr><td><strong>${alan}</strong></td><td>${deger}</td></tr>`;
                 });
 
@@ -195,19 +211,16 @@
                 const lon = parseFloat(boylamStr);
 
                 if (!isNaN(lat) && !isNaN(lon) && lat !== 0 && lon !== 0) {
-                    // Eğer harita daha önce oluşturulmuşsa, imha et (yeniden yükleme hatasını önler)
                     if (harita) {
                         harita.remove();
                     }
                     
-                    // Harita alanını başlat
                     harita = L.map('haritaAlani').setView([lat, lon], 13);
 
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                         attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                     }).addTo(harita);
                     
-                    // İşaretleyici ekle
                     L.marker([lat, lon]).addTo(harita)
                         .bindPopup(`<b>${musteri['Müşteri Adı']}</b><br>Kanal: ${musteri['Kanal']}`).openPopup();
                 } else {
@@ -221,7 +234,6 @@
                 html += '<ul>';
                 
                 eslesenMusteriler.forEach(musteri => {
-                     // Müşteri koduna tıklanınca, kodu arama kutusuna yazıp tekrar sorgulama yapıyoruz.
                      html += `<li><a href="#" onclick="document.getElementById('musteriKodu').value='${musteri['Müşteri Kodu']}'; sorgula(); return false;">` 
                           + `<strong>${musteri['Müşteri Kodu']}</strong> - ${musteri['Müşteri Adı']} (${musteri['İli'] || 'İl Bilgisi Yok'})`
                           + `</a></li>`;
