@@ -82,13 +82,31 @@
             border: 2px solid #007bff; 
             border-radius: 8px;
         }
+        /* Çoklu sonuç listesi stili */
+        #sonucAlani ul {
+            list-style: none;
+            padding: 0;
+        }
+        #sonucAlani li {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+        }
+        #sonucAlani li:hover {
+            background-color: #eef;
+        }
+        #sonucAlani li a {
+            text-decoration: none;
+            color: #007bff;
+            display: block;
+        }
     </style>
 </head>
 <body>
     <h1>Müşteri Bilgi Sorgulama</h1>
     
-    <label for="musteriKodu">Müşteri Kodu Girin:</label>
-    <input type="text" id="musteriKodu" placeholder="Müşteri Kodu (Örn: 12345)" onkeypress="if(event.keyCode == 13) sorgula()">
+    <label for="musteriKodu">Arama Yapın (Kod veya Ad):</label>
+    <input type="text" id="musteriKodu" placeholder="Müşteri Kodu veya Adı Girin" onkeypress="if(event.keyCode == 13) sorgula()">
     <button onclick="sorgula()">Sorgula</button>
 
     <p id="yukleniyor">Veriler Google Sheets'ten yükleniyor, lütfen bekleyiniz...</p>
@@ -130,27 +148,35 @@
 
         function sorgula() {
             const kodInput = document.getElementById('musteriKodu');
-            const kod = kodInput.value.trim();
+            const aramaMetni = kodInput.value.trim().toUpperCase(); // Arama metnini al ve büyük harfe çevir
             const sonucDiv = document.getElementById('sonucAlani');
             const haritaDiv = document.getElementById('haritaAlani');
             
-            // Harita alanını temizle
+            // Harita alanını ve sonuç alanını temizle
             haritaDiv.innerHTML = '';
             
-            if (kod === "") {
-                sonucDiv.innerHTML = `<p class="hata">Lütfen bir Müşteri Kodu girin.</p>`;
+            if (aramaMetni === "") {
+                sonucDiv.innerHTML = `<p class="hata">Lütfen bir Müşteri Kodu veya Müşteri Adı girin.</p>`;
                 return;
             }
 
-            const arananKod = kod.toUpperCase();
+            sonucDiv.innerHTML = `"${aramaMetni}" aranıyor...`;
 
-            sonucDiv.innerHTML = `Müşteri Kodu "${arananKod}" aranıyor...`;
-
-            // 2. Müşteri koduna göre arama yapma
-            const musteri = tumMusteriler.find(m => String(m['Müşteri Kodu']).trim().toUpperCase() === arananKod);
-
-            if (musteri) {
-                // 3. Sonucu HTML tablo olarak ekrana yazdırma
+            // 2. Müşteri koduna veya adına göre arama yapma
+            const eslesenMusteriler = tumMusteriler.filter(m => {
+                // Kontrol edilecek alanları ve değerlerini alıyoruz
+                const kod = String(m['Müşteri Kodu'] || '').toUpperCase();
+                const ad = String(m['Müşteri Adı'] || '').toUpperCase();
+                
+                // Arama metni bu iki alandan herhangi birinde geçiyor mu?
+                return kod.includes(aramaMetni) || ad.includes(aramaMetni);
+            });
+            
+            // Yalnızca tek bir müşteri bulunduğunda detaylı gösterim ve harita
+            if (eslesenMusteriler.length === 1) {
+                const musteri = eslesenMusteriler[0];
+                
+                // 3. Tek sonucu HTML tablo olarak ekrana yazdırma
                 let html = '<table><thead><tr><th>Alan Adı</th><th>Değer</th></tr></thead><tbody>';
                 
                 ciktiAlanlari.forEach(alan => {
@@ -161,7 +187,7 @@
                 html += '</tbody></table>';
                 sonucDiv.innerHTML = html;
                 
-                // 4. Haritada gösterme (Virgül/Nokta düzeltmesi eklendi)
+                // 4. Haritada gösterme (Koordinat düzeltmesi ile)
                 const enlemStr = String(musteri['Enlem']).replace(',', '.').trim();
                 const boylamStr = String(musteri['Boylam']).replace(',', '.').trim();
                 
@@ -188,8 +214,25 @@
                     haritaDiv.innerHTML = '<p style="color: gray;">Enlem veya Boylam verisi bu müşteri için eksik/hatalı olduğu için harita gösterilemiyor.</p>';
                 }
 
-            } else {
-                sonucDiv.innerHTML = `<p class="hata"><strong>Hata:</strong> "${arananKod}" kodlu müşteri bulunamadı. Lütfen kodu kontrol edin.</p>`;
+            } 
+            // Birden fazla müşteri bulunduğunda liste şeklinde gösterme
+            else if (eslesenMusteriler.length > 1) {
+                let html = `<p class="hata">Birden fazla sonuç bulundu (${eslesenMusteriler.length} adet). Lütfen aramayı daraltın veya listeden seçin:</p>`;
+                html += '<ul>';
+                
+                eslesenMusteriler.forEach(musteri => {
+                     // Müşteri koduna tıklanınca, kodu arama kutusuna yazıp tekrar sorgulama yapıyoruz.
+                     html += `<li><a href="#" onclick="document.getElementById('musteriKodu').value='${musteri['Müşteri Kodu']}'; sorgula(); return false;">` 
+                          + `<strong>${musteri['Müşteri Kodu']}</strong> - ${musteri['Müşteri Adı']} (${musteri['İli'] || 'İl Bilgisi Yok'})`
+                          + `</a></li>`;
+                });
+                html += '</ul>';
+                sonucDiv.innerHTML = html;
+                haritaDiv.innerHTML = '<p>Birden fazla sonuç bulunduğu için harita gösterilemiyor.</p>';
+            }
+            // Hiç müşteri bulunamadığında
+            else {
+                sonucDiv.innerHTML = `<p class="hata"><strong>Hata:</strong> "${aramaMetni}" ile eşleşen müşteri bulunamadı.</p>`;
                 haritaDiv.innerHTML = '';
             }
         }
