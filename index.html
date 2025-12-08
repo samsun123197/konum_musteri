@@ -179,20 +179,20 @@
                 ciktiAlanlari.forEach(alan => {
                     let deger = musteri[alan] !== undefined && musteri[alan] !== null ? musteri[alan] : '-';
                     
-                    // ✨ İstenen dönüşüm (Rutta mı)
+                    // ✨ İstenen dönüşüm (Rutta mı) - Hem '1'/'0' hem de '1,00'/'0,00' kontrolü
                     if (alan === 'Rutta mı') {
-                        if (deger === 1 || deger === '1') {
+                        if (deger === 1 || deger === '1' || deger === '1,00') {
                             deger = 'Evet';
-                        } else if (deger === 0 || deger === '0') {
+                        } else if (deger === 0 || deger === '0' || deger === '0,00') {
                             deger = 'Hayır';
                         }
                     }
 
-                    // ✨ İstenen dönüşüm (Satışa Kapalımı)
+                    // ✨ İstenen dönüşüm (Satışa Kapalımı) - Hem '1'/'0' hem de '1,00'/'0,00' kontrolü
                     if (alan === 'Satışa Kapalımı') {
-                        if (deger === 1 || deger === '1') {
+                        if (deger === 1 || deger === '1' || deger === '1,00') {
                             deger = 'Evet';
-                        } else if (deger === 0 || deger === '0') {
+                        } else if (deger === 0 || deger === '0' || deger === '0,00') {
                             deger = 'Hayır';
                         }
                     }
