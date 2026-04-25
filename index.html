@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Müşteri Bilgi Sorgulama - Detaylı Rapor</title>
+    <title>Müşteri Bilgi Sorgulama - GitHub Pages</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     
@@ -44,12 +44,10 @@
             cursor: pointer;
             border-radius: 4px;
             font-weight: bold;
-            font-size: 12px;
-            color: white;
+            font-size: 13px;
         }
-        .excel-btn { background-color: #217346; }
-        .pdf-btn { background-color: #d32f2f; }
-        .cube-btn { background-color: #ff9800; } /* Satış Temsilcisi Raporu için turuncu */
+        .excel-btn { background-color: #217346; color: white; }
+        .pdf-btn { background-color: #d32f2f; color: white; }
 
         .copy-btn {
             background-color: #007bff;
@@ -86,16 +84,19 @@
             border: 2px solid #007bff; 
             border-radius: 8px;
         }
+        ul { list-style: none; padding: 0; }
+        li { padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; }
+        li a { text-decoration: none; color: #007bff; font-weight: bold; }
     </style>
 </head>
 <body>
     <h1>Müşteri Bilgi Sorgulama</h1>
     
-    <label for="musteriKodu">Arama Yapın:</label>
-    <input type="text" id="musteriKodu" placeholder="Müşteri Kodu veya Adı" onkeypress="if(event.keyCode == 13) sorgula()">
+    <label for="musteriKodu">Arama Yapın (Kod veya Ad):</label>
+    <input type="text" id="musteriKodu" placeholder="Müşteri Kodu veya Adı Girin" onkeypress="if(event.keyCode == 13) sorgula()">
     <button onclick="sorgula()" class="sorgula-btn">Sorgula</button>
 
-    <p id="yukleniyor">Sistem Hazırlanıyor...</p>
+    <p id="yukleniyor">Veriler Google Sheets'ten yükleniyor, lütfen bekleyiniz...</p>
 
     <hr>
     <h2>Sorgu Sonucu</h2>
@@ -110,18 +111,11 @@
         const ciktiAlanlari = [
             "Müşteri Kodu", "Müşteri Adı", "Enlem", "Boylam", "Durumu", 
             "Gsm", "Kanal", "Tip", "Alt Tip", "Adres", 
-            "İli", "İlçesi", "Dolap Sayısı", "Rutta mı", "Satışa Kapalımı"
+            "İli", "İlçesi", "Dolap Sayısı", "Rutta mı", "Satışa Kapalımı", "Bakiye"
         ];
         
-        // 1. Cari Ekstre İndirme (Standart Rapor)
         function ekstreIndir(musteriKodu, mod) {
             const url = `https://vp.golfdondurma.com.tr/SAASReport/ReportView.aspx?reportId=31885200&ReportTypeId=2&filters=0;134010607746|2;${musteriKodu}|1;161|3;01.01.2026|4;31.12.2026|5;|6;|7;&RoleId=134053451661&LanguageId=1&UserId=134053530632&Mode=${mod}&Token=83b27236-1b41-4ea7-84fb-95467bee94a0`;
-            window.open(url, '_blank');
-        }
-
-        // 2. ✨ Satış Temsilcisi & Bakiye Raporu (Cube Report)
-        function cubeRaporIndir(musteriKodu) {
-            const url = `https://vp.golfdondurma.com.tr/SAASReport/ReportView.aspx?CubeReportId=702921602&Values=2;134010607746|1;TO_DATE(\`20261231\`,\`YYYYMMDD\`)|0;|10;\`${musteriKodu}\`|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;&RoleId=134053451661&LanguageId=1&UserId=134053530632&ReportTypeId=1&RW=1175723,682667736,702921604&CL=&DT=702921611&Mode=ExportToExcel&Token=bd23d90d-ae25-41a4-8046-cb4945ac83e4`;
             window.open(url, '_blank');
         }
 
@@ -144,25 +138,33 @@
         });
 
         function sorgula() {
-            const aramaMetni = document.getElementById('musteriKodu').value.trim().toUpperCase();
+            const kodInput = document.getElementById('musteriKodu');
+            const aramaMetni = kodInput.value.trim().toUpperCase();
             const sonucDiv = document.getElementById('sonucAlani');
+            const haritaDiv = document.getElementById('haritaAlani');
+            
+            haritaDiv.innerHTML = '';
             if (aramaMetni === "") return;
 
-            const eslesenler = tumMusteriler.filter(m => {
+            const eslesenMusteriler = tumMusteriler.filter(m => {
                 const kod = String(m['Müşteri Kodu'] || '').toUpperCase();
                 const ad = String(m['Müşteri Adı'] || '').toUpperCase();
                 return kod.includes(aramaMetni) || ad.includes(aramaMetni);
             });
             
-            if (eslesenler.length === 1) {
-                const m = eslesenler[0];
+            if (eslesenMusteriler.length === 1) {
+                const m = eslesenMusteriler[0];
+                const enlemStr = String(m['Enlem']).replace(',', '.').trim();
+                const boylamStr = String(m['Boylam']).replace(',', '.').trim();
+                const lat = parseFloat(enlemStr);
+                const lon = parseFloat(boylamStr);
                 const mKodu = m['Müşteri Kodu'];
-                const lat = parseFloat(String(m['Enlem']).replace(',', '.'));
-                const lon = parseFloat(String(m['Boylam']).replace(',', '.'));
 
+                const koordinatMetni = (!isNaN(lat) && !isNaN(lon) && lat !== 0 && lon !== 0) ? `${lat},${lon}` : 'Koordinat Yok/Hatalı';
+                
                 let html = '<table><thead><tr><th>Alan Adı</th><th>Değer</th></tr></thead><tbody>';
                 
-                // Cari Ekstre Satırı
+                // Cari Ekstre Butonları
                 html += `<tr><td><strong>Cari Ekstre</strong></td><td>
                     <div class="btn-group">
                         <button onclick="ekstreIndir('${mKodu}', 'ExportToExcel')" class="download-btn excel-btn">📊 Excel</button>
@@ -170,55 +172,50 @@
                     </div>
                 </td></tr>`;
 
-                // ✨ YENİ: Satış Temsilcisi & Bakiye Sorgulama Satırı
-                html += `<tr><td><strong>Satış Temsilcisi / Bakiye</strong></td><td>
-                    <div class="btn-group">
-                        <button onclick="cubeRaporIndir('${mKodu}')" class="download-btn cube-btn">🔍 Temsilci & Bakiye Raporu Al</button>
-                    </div>
-                    <div style="margin-top:8px; font-size:12px; color:#555;">(Satış temsilcisi ismini ve güncel bakiyeyi bu rapordan görebilirsiniz.)</div>
-                </td></tr>`;
-
                 ciktiAlanlari.forEach(alan => {
-                    let deger = m[alan] || '-';
-                    if (alan === 'Rutta mı' || alan === 'Satışa Kapalımı') deger = (deger == 1) ? 'Evet' : 'Hayır';
+                    let deger = m[alan] !== undefined && m[alan] !== null ? m[alan] : '-';
+                    
+                    // Rutta mı ve Satışa Kapalı mı Dönüşümleri
+                    if (alan === 'Rutta mı' || alan === 'Satışa Kapalımı') {
+                        deger = (deger == 1 || deger == '1' || deger == '1,00') ? 'Evet' : 'Hayır';
+                    }
 
                     if (alan === 'Dolap Sayısı') {
                         const link = `https://samsun123197.github.io/barkod_sorgu/?query=${mKodu}`;
-                        html += `<tr><td><strong>${alan}</strong></td><td>${deger} <a href="${link}" target="_blank" style="margin-left:10px; font-weight:bold; color:#dc3545; text-decoration:none;">[Detay]</a></td></tr>`;
+                        html += `<tr><td><strong>${alan}</strong></td><td>${deger} <a href="${link}" target="_blank" style="margin-left: 10px; font-weight: bold; color: #dc3545; text-decoration: none;">[Detay]</a></td></tr>`;
                     } else {
                         html += `<tr><td><strong>${alan}</strong></td><td>${deger}</td></tr>`;
                     }
                 });
                 
-                // Koordinat ve Harita Linki
-                const koordinatMetni = (!isNaN(lat) && !isNaN(lon)) ? `${lat},${lon}` : 'Koordinat Yok';
-                if (koordinatMetni !== 'Koordinat Yok') {
+                // ✨ Kopyalanacak Koordinat ve Harita Linki Kısımları
+                if (koordinatMetni !== 'Koordinat Yok/Hatalı') {
                      html += `<tr><td><strong>Kopyalanacak Koordinat</strong></td><td>
                         <span>${koordinatMetni}</span>
                         <button class="copy-btn" id="copyButton" onclick="panoyaKopyala('${koordinatMetni}', 'copyButton')">Panoya Kopyala</button>
                      </td></tr>`;
+                     
                      const mapsUrl = `https://www.google.com/maps?q=${lat},${lon}`;
-                     html += `<tr><td><strong>Haritada Göster</strong></td><td><a href="${mapsUrl}" target="_blank" style="color:#007bff; font-weight:bold;">Google Haritalar'da Aç</a></td></tr>`;
+                     html += `<tr><td><strong>Haritada Göster</strong></td><td><a href="${mapsUrl}" target="_blank" style="color: #007bff; font-weight: bold;">Google Haritalar'da Aç</a></td></tr>`;
                 }
 
                 html += '</tbody></table>';
                 sonucDiv.innerHTML = html;
                 
-                // Harita Gösterimi
-                if (!isNaN(lat) && !isNaN(lon)) {
+                if (koordinatMetni !== 'Koordinat Yok/Hatalı') {
                     if (harita) harita.remove();
                     harita = L.map('haritaAlani').setView([lat, lon], 13);
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(harita);
-                    L.marker([lat, lon]).addTo(harita).bindPopup(m['Müşteri Adı']).openPopup();
+                    L.marker([lat, lon]).addTo(harita).bindPopup(`<b>${m['Müşteri Adı']}</b>`).openPopup();
                 }
-            } else if (eslesenler.length > 1) {
-                let html = `<ul>`;
-                eslesenler.forEach(m => {
+            } else if (eslesenMusteriler.length > 1) {
+                let html = `<p class="hata">Birden fazla sonuç bulundu:</p><ul>`;
+                eslesenMusteriler.forEach(m => {
                      html += `<li><a href="#" onclick="document.getElementById('musteriKodu').value='${m['Müşteri Kodu']}'; sorgula(); return false;">${m['Müşteri Kodu']} - ${m['Müşteri Adı']}</a></li>`;
                 });
                 sonucDiv.innerHTML = html + '</ul>';
             } else {
-                sonucDiv.innerHTML = `<p class="hata">Bulunamadı.</p>`;
+                sonucDiv.innerHTML = `<p class="hata">Müşteri bulunamadı.</p>`;
             }
         }
     </script>
