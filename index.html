@@ -10,7 +10,6 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
-        /* Genel Stil Ayarları */
         body { 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
             padding: 20px; 
@@ -22,7 +21,6 @@
             padding-bottom: 10px;
         }
         
-        /* Giriş ve Buton Stilleri */
         input[type="text"], button {
             padding: 10px;
             border-radius: 5px;
@@ -30,18 +28,27 @@
             border: 1px solid #ccc;
             font-size: 16px;
         }
-        button.sorgula-btn { /* Sorgulama butonu için özel sınıf */
+        button.sorgula-btn {
             background-color: #28a745;
             color: white;
             border: none;
             cursor: pointer;
             transition: background-color 0.3s;
         }
-        button.sorgula-btn:hover {
-            background-color: #218838;
-        }
+        button.sorgula-btn:hover { background-color: #218838; }
 
-        /* Kopyalama butonu stili */
+        .btn-group { display: flex; gap: 10px; margin-bottom: 5px; }
+        .download-btn {
+            border: none;
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 13px;
+        }
+        .excel-btn { background-color: #217346; color: white; }
+        .pdf-btn { background-color: #d32f2f; color: white; }
+
         .copy-btn {
             background-color: #007bff;
             color: white;
@@ -52,11 +59,7 @@
             margin-left: 10px;
             font-size: 14px;
         }
-        .copy-btn:hover {
-            background-color: #0056b3;
-        }
         
-        /* Sonuç Tablosu Stilleri */
         #sonucAlani table {
             border: 2px solid #007bff;
             border-collapse: collapse;
@@ -69,52 +72,21 @@
             border: 1px solid #dee2e6;
             text-align: left;
         }
-        #sonucAlani tr:nth-child(even) {
-            background-color: #f8f9fa;
-        }
-        #sonucAlani tr:hover {
-            background-color: #e2e6ea;
-        }
-        #sonucAlani strong {
-            font-weight: bold;
-            color: #333;
-        }
+        #sonucAlani tr:nth-child(even) { background-color: #f8f9fa; }
+        #sonucAlani strong { font-weight: bold; color: #333; }
         
-        /* Durum Mesajları */
-        #yukleniyor { 
-            color: orange; 
-            font-style: italic; 
-        }
-        .hata { 
-            color: red; 
-            font-weight: bold;
-        }
+        #yukleniyor { color: orange; font-style: italic; }
+        .hata { color: red; font-weight: bold; }
 
-        /* Harita Alanı */
         #haritaAlani {
             height: 400px; 
             margin-top: 30px; 
             border: 2px solid #007bff; 
             border-radius: 8px;
         }
-        /* Çoklu sonuç listesi stili */
-        #sonucAlani ul {
-            list-style: none;
-            padding: 0;
-        }
-        #sonucAlani li {
-            padding: 10px;
-            border-bottom: 1px solid #eee;
-            cursor: pointer;
-        }
-        #sonucAlani li:hover {
-            background-color: #eef;
-        }
-        #sonucAlani li a {
-            text-decoration: none;
-            color: #007bff;
-            display: block;
-        }
+        ul { list-style: none; padding: 0; }
+        li { padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; }
+        li a { text-decoration: none; color: #007bff; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -127,42 +99,34 @@
     <p id="yukleniyor">Veriler Google Sheets'ten yükleniyor, lütfen bekleyiniz...</p>
 
     <hr>
-
     <h2>Sorgu Sonucu</h2>
     <div id="sonucAlani"></div>
-
     <div id="haritaAlani"></div>
 
     <script>
-        // Sizin sağladığınız Google Sheets CSV dışa aktarım URL'si
         const veriDosyasiURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRkONEBGWF-u3K_tU6kNvsHUpO9LUx_ZDUCvy_SCCcjWh0K7jnmGeynwM9XAUwwww/pub?output=csv';
         let tumMusteriler = [];
-        let harita = null; // Leaflet harita objesi
+        let harita = null; 
         
-        // Müşterinin istediği çıktı alanları (CSV başlıklarınızla eşleşmeli!)
         const ciktiAlanlari = [
             "Müşteri Kodu", "Müşteri Adı", "Enlem", "Boylam", "Durumu", 
             "Gsm", "Kanal", "Tip", "Alt Tip", "Adres", 
             "İli", "İlçesi", "Dolap Sayısı", "Rutta mı", "Satışa Kapalımı", "Bakiye"
         ];
         
-        // Kopyalama fonksiyonu
+        function ekstreIndir(musteriKodu, mod) {
+            const url = `https://vp.golfdondurma.com.tr/SAASReport/ReportView.aspx?reportId=31885200&ReportTypeId=2&filters=0;134010607746|2;${musteriKodu}|1;161|3;01.01.2026|4;31.12.2026|5;|6;|7;&RoleId=134053451661&LanguageId=1&UserId=134053530632&Mode=${mod}&Token=83b27236-1b41-4ea7-84fb-95467bee94a0`;
+            window.open(url, '_blank');
+        }
+
         function panoyaKopyala(metin, elementId) {
             navigator.clipboard.writeText(metin).then(() => {
                 const button = document.getElementById(elementId);
                 button.textContent = 'Kopyalandı!';
-                button.style.backgroundColor = '#17a2b8'; // Farklı bir renk yap
-                setTimeout(() => {
-                    button.textContent = 'Panoya Kopyala';
-                    button.style.backgroundColor = '#007bff';
-                }, 1500);
-            }).catch(err => {
-                console.error('Kopyalama hatası:', err);
-                alert('Kopyalama başarısız oldu. Lütfen kendiniz kopyalayın.');
+                setTimeout(() => { button.textContent = 'Panoya Kopyala'; }, 1500);
             });
         }
         
-        // 1. CSV dosyasını okuma ve belleğe yükleme
         Papa.parse(veriDosyasiURL, {
             download: true,
             header: true,
@@ -170,10 +134,6 @@
             complete: function(results) {
                 tumMusteriler = results.data;
                 document.getElementById('yukleniyor').style.display = 'none';
-                document.getElementById('sonucAlani').innerHTML = 'Veriler başarıyla yüklendi. Şimdi sorgulama yapabilirsiniz.';
-            },
-            error: function(err, file) {
-                document.getElementById('yukleniyor').innerHTML = `<p class="hata">Veri yüklenirken bir hata oluştu: ${err}</p>`;
             }
         });
 
@@ -184,127 +144,80 @@
             const haritaDiv = document.getElementById('haritaAlani');
             
             haritaDiv.innerHTML = '';
-            
-            if (aramaMetni === "") {
-                sonucDiv.innerHTML = `<p class="hata">Lütfen bir Müşteri Kodu veya Müşteri Adı girin.</p>`;
-                return;
-            }
+            if (aramaMetni === "") return;
 
-            sonucDiv.innerHTML = `"${aramaMetni}" aranıyor...`;
-
-            // 2. Müşteri koduna veya adına göre arama yapma
             const eslesenMusteriler = tumMusteriler.filter(m => {
                 const kod = String(m['Müşteri Kodu'] || '').toUpperCase();
                 const ad = String(m['Müşteri Adı'] || '').toUpperCase();
-                
                 return kod.includes(aramaMetni) || ad.includes(aramaMetni);
             });
             
-            // Yalnızca tek bir müşteri bulunduğunda detaylı gösterim ve harita
             if (eslesenMusteriler.length === 1) {
-                const musteri = eslesenMusteriler[0];
-                
-                // Koordinatları al ve düzelt (Harita ve Linkler için)
-                const enlemStr = String(musteri['Enlem']).replace(',', '.').trim();
-                const boylamStr = String(musteri['Boylam']).replace(',', '.').trim();
+                const m = eslesenMusteriler[0];
+                const enlemStr = String(m['Enlem']).replace(',', '.').trim();
+                const boylamStr = String(m['Boylam']).replace(',', '.').trim();
                 const lat = parseFloat(enlemStr);
                 const lon = parseFloat(boylamStr);
+                const mKodu = m['Müşteri Kodu'];
 
-                // Koordinat Metin Formatı: XX.XXXXXXX,YY.YYYYYYY
-                const koordinatMetni = (!isNaN(lat) && !isNaN(lon) && lat !== 0 && lon !== 0) 
-                    ? `${lat},${lon}` 
-                    : 'Koordinat Yok/Hatalı';
+                const koordinatMetni = (!isNaN(lat) && !isNaN(lon) && lat !== 0 && lon !== 0) ? `${lat},${lon}` : 'Koordinat Yok/Hatalı';
                 
-                // 3. Tek sonucu HTML tablo olarak ekrana yazdırma
                 let html = '<table><thead><tr><th>Alan Adı</th><th>Değer</th></tr></thead><tbody>';
                 
+                // Cari Ekstre Butonları
+                html += `<tr><td><strong>Cari Ekstre</strong></td><td>
+                    <div class="btn-group">
+                        <button onclick="ekstreIndir('${mKodu}', 'ExportToExcel')" class="download-btn excel-btn">📊 Excel</button>
+                        <button onclick="ekstreIndir('${mKodu}', 'ExportToPDF')" class="download-btn pdf-btn">📄 PDF</button>
+                    </div>
+                </td></tr>`;
+
                 ciktiAlanlari.forEach(alan => {
-                    let deger = musteri[alan] !== undefined && musteri[alan] !== null ? musteri[alan] : '-';
+                    let deger = m[alan] !== undefined && m[alan] !== null ? m[alan] : '-';
                     
-                    // Dönüşümler
+                    // Rutta mı ve Satışa Kapalı mı Dönüşümleri
                     if (alan === 'Rutta mı' || alan === 'Satışa Kapalımı') {
-                        if (deger === 1 || deger === '1' || deger === '1,00') {
-                            deger = 'Evet';
-                        } else if (deger === 0 || deger === '0' || deger === '0,00') {
-                            deger = 'Hayır';
-                        }
+                        deger = (deger == 1 || deger == '1' || deger == '1,00') ? 'Evet' : 'Hayır';
                     }
 
-                    // ✨ YENİ: Dolap Sayısı için Detay Linki Ekleme
                     if (alan === 'Dolap Sayısı') {
-                        const musteriKodu = musteri['Müşteri Kodu'];
-                        // Barkod sorgulama sayfasına müşteri kodunu query parametresi ile iletiyoruz.
-                        const detayLink = `https://samsun123197.github.io/barkod_sorgu/?query=${musteriKodu}`;
-                        
-                        // Custom row generation for Dolap Sayısı
-                        html += `<tr><td><strong>${alan}</strong></td><td>
-                            ${deger} 
-                            <a href="${detayLink}" target="_blank" style="margin-left: 10px; font-weight: bold; color: #dc3545; text-decoration: none;">[Detay]</a>
-                        </td></tr>`;
+                        const link = `https://samsun123197.github.io/barkod_sorgu/?query=${mKodu}`;
+                        html += `<tr><td><strong>${alan}</strong></td><td>${deger} <a href="${link}" target="_blank" style="margin-left: 10px; font-weight: bold; color: #dc3545; text-decoration: none;">[Detay]</a></td></tr>`;
                     } else {
-                        // Normal row generation for other fields
                         html += `<tr><td><strong>${alan}</strong></td><td>${deger}</td></tr>`;
                     }
                 });
                 
-                // Koordinat Kopyalama Satırı Ekleme
+                // ✨ Kopyalanacak Koordinat ve Harita Linki Kısımları
                 if (koordinatMetni !== 'Koordinat Yok/Hatalı') {
                      html += `<tr><td><strong>Kopyalanacak Koordinat</strong></td><td>
-                        <span id="koordinatDeger">${koordinatMetni}</span>
+                        <span>${koordinatMetni}</span>
                         <button class="copy-btn" id="copyButton" onclick="panoyaKopyala('${koordinatMetni}', 'copyButton')">Panoya Kopyala</button>
                      </td></tr>`;
-                }
-
-                // Haritada Göster Linki Ekleme
-                if (koordinatMetni !== 'Koordinat Yok/Hatalı') {
-                    // Not: Google Haritalar link formatı korunmuştur.
-                    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
-                    html += `<tr><td><strong>Haritada Göster</strong></td><td><a href="${mapsUrl}" target="_blank">Google Haritalar'da Aç (Yeni Sekme)</a></td></tr>`;
+                     
+                     const mapsUrl = `https://www.google.com/maps?q=${lat},${lon}`;
+                     html += `<tr><td><strong>Haritada Göster</strong></td><td><a href="${mapsUrl}" target="_blank" style="color: #007bff; font-weight: bold;">Google Haritalar'da Aç</a></td></tr>`;
                 }
 
                 html += '</tbody></table>';
                 sonucDiv.innerHTML = html;
                 
-                // 4. Haritada gösterme (Leaflet)
                 if (koordinatMetni !== 'Koordinat Yok/Hatalı') {
-                    if (harita) {
-                        harita.remove();
-                    }
-                    
+                    if (harita) harita.remove();
                     harita = L.map('haritaAlani').setView([lat, lon], 13);
-
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        attribution: '© <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                    }).addTo(harita);
-                    
-                    L.marker([lat, lon]).addTo(harita)
-                        .bindPopup(`<b>${musteri['Müşteri Adı']}</b><br>Kanal: ${musteri['Kanal']}`).openPopup();
-                } else {
-                    haritaDiv.innerHTML = '<p style="color: gray;">Enlem veya Boylam verisi bu müşteri için eksik/hatalı olduğu için harita gösterilemiyor.</p>';
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(harita);
+                    L.marker([lat, lon]).addTo(harita).bindPopup(`<b>${m['Müşteri Adı']}</b>`).openPopup();
                 }
-
-            } 
-            // Birden fazla müşteri bulunduğunda liste şeklinde gösterme
-            else if (eslesenMusteriler.length > 1) {
-                let html = `<p class="hata">Birden fazla sonuç bulundu (${eslesenMusteriler.length} adet). Lütfen aramayı daraltın veya listeden seçin:</p>`;
-                html += '<ul>';
-                
-                eslesenMusteriler.forEach(musteri => {
-                     html += `<li><a href="#" onclick="document.getElementById('musteriKodu').value='${musteri['Müşteri Kodu']}'; sorgula(); return false;">` 
-                          + `<strong>${musteri['Müşteri Kodu']}</strong> - ${musteri['Müşteri Adı']} (${musteri['İli'] || 'İl Bilgisi Yok'})`
-                          + `</a></li>`;
+            } else if (eslesenMusteriler.length > 1) {
+                let html = `<p class="hata">Birden fazla sonuç bulundu:</p><ul>`;
+                eslesenMusteriler.forEach(m => {
+                     html += `<li><a href="#" onclick="document.getElementById('musteriKodu').value='${m['Müşteri Kodu']}'; sorgula(); return false;">${m['Müşteri Kodu']} - ${m['Müşteri Adı']}</a></li>`;
                 });
-                html += '</ul>';
-                sonucDiv.innerHTML = html;
-                haritaDiv.innerHTML = '<p>Birden fazla sonuç bulunduğu için harita gösterilemiyor.</p>';
-            }
-            // Hiç müşteri bulunamadığında
-            else {
-                sonucDiv.innerHTML = `<p class="hata"><strong>Hata:</strong> "${aramaMetni}" ile eşleşen müşteri bulunamadı.</p>`;
-                haritaDiv.innerHTML = '';
+                sonucDiv.innerHTML = html + '</ul>';
+            } else {
+                sonucDiv.innerHTML = `<p class="hata">Müşteri bulunamadı.</p>`;
             }
         }
     </script>
 </body>
 </html>
-
