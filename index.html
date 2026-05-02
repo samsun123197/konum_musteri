@@ -1,223 +1,242 @@
 <!DOCTYPE html>
-<html>
+<html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Müşteri Bilgi Sorgulama - GitHub Pages</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Müşteri Bilgi Portalı</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
-    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            padding: 20px; 
-            background-color: #f4f7f6;
-        }
-        h1 {
-            color: #007bff;
-            border-bottom: 2px solid #007bff;
-            padding-bottom: 10px;
-        }
+        * { box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; padding: 10px; background-color: #f4f7f6; margin: 0; }
         
-        input[type="text"], button {
-            padding: 10px;
-            border-radius: 5px;
-            margin-right: 10px;
-            border: 1px solid #ccc;
-            font-size: 16px;
+        .main-container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 15px; 
+            border-radius: 12px; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
         }
-        button.sorgula-btn {
-            background-color: #28a745;
-            color: white;
+
+        .top-nav { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+        
+        .nav-btn { 
+            display: block; 
+            width: 100%; 
+            padding: 14px; 
+            color: white; 
+            text-align: center; 
+            text-decoration: none; 
+            font-weight: bold; 
+            border-radius: 8px; 
+            font-size: 15px; 
             border: none;
             cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        button.sorgula-btn:hover { background-color: #218838; }
-
-        .btn-group { display: flex; gap: 10px; margin-bottom: 5px; }
-        .download-btn {
-            border: none;
-            padding: 8px 12px;
-            cursor: pointer;
-            border-radius: 4px;
-            font-weight: bold;
-            font-size: 13px;
-        }
-        .excel-btn { background-color: #217346; color: white; }
-        .pdf-btn { background-color: #d32f2f; color: white; }
-
-        .copy-btn {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            cursor: pointer;
-            border-radius: 4px;
-            margin-left: 10px;
-            font-size: 14px;
         }
         
-        #sonucAlani table {
-            border: 2px solid #007bff;
-            border-collapse: collapse;
-            width: 100%;
-            margin: 20px 0;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-        #sonucAlani th, #sonucAlani td {
-            padding: 12px 15px;
-            border: 1px solid #dee2e6;
-            text-align: left;
-        }
-        #sonucAlani tr:nth-child(even) { background-color: #f8f9fa; }
-        #sonucAlani strong { font-weight: bold; color: #333; }
+        .key-btn { background-color: #f39c12; }
+        .dolap-btn { background-color: #d32f2f; }
         
-        #yukleniyor { color: orange; font-style: italic; }
-        .hata { color: red; font-weight: bold; }
+        h2 { color: #007bff; text-align: center; font-size: 1.3rem; margin-top: 5px; margin-bottom: 15px; }
+        
+        .search-area { display: flex; flex-direction: row; gap: 8px; margin-bottom: 20px; }
+        input[type="text"] { flex: 1; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; outline: none; }
+        button.sorgula-btn { padding: 12px 18px; background-color: #28a745; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 15px; }
 
-        #haritaAlani {
-            height: 400px; 
-            margin-top: 30px; 
-            border: 2px solid #007bff; 
-            border-radius: 8px;
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; border: 1px solid #007bff; background: #fff; }
+        th, td { padding: 12px 10px; border: 1px solid #dee2e6; text-align: left; font-size: 14px; }
+        th { background-color: #f8f9fa; width: 40%; color: #333; font-weight: 600; }
+        
+        .bakiye-val { font-size: 18px; font-weight: bold; font-family: 'Courier New', monospace; }
+        
+        .copy-btn { background-color: #007bff; color: white; border: none; padding: 8px 10px; cursor: pointer; border-radius: 6px; font-size: 12px; margin-top: 5px; display: inline-block; }
+        .map-link { color: #007bff; font-weight: bold; text-decoration: none; display: inline-block; padding: 5px 0; }
+        .detail-link { margin-left: 5px; font-weight: bold; color: #dc3545; text-decoration: none; font-size: 15px; }
+
+        .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+        .action-btn { 
+            padding: 12px; 
+            border: none; 
+            border-radius: 8px; 
+            color: white; 
+            font-weight: bold; 
+            cursor: pointer; 
+            font-size: 14px; 
+            text-decoration: none; 
+            text-align: center; 
+            flex: 1; 
+            min-width: 100px;
         }
-        ul { list-style: none; padding: 0; }
-        li { padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; }
-        li a { text-decoration: none; color: #007bff; font-weight: bold; }
+        .excel-bg { background-color: #217346; }
+        .pdf-bg { background-color: #d32f2f; }
+        .detay-bg { background-color: #007bff; }
+        .detay-bg-alt { background-color: #6c757d; }
+
+        #haritaAlani { height: 300px; margin-top: 20px; border: 1px solid #007bff; border-radius: 8px; display: none; }
+        
+        .liste-item { padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; color: #007bff; font-weight: 500; }
+        .liste-item:active { background-color: #e8f0fe; }
+
+        @media (max-width: 480px) {
+            th, td { font-size: 13px; padding: 10px 8px; }
+            .bakiye-val { font-size: 16px; }
+            h2 { font-size: 1.1rem; }
+        }
     </style>
 </head>
 <body>
-    <h1>Müşteri Bilgi Sorgulama</h1>
+
+<div class="main-container">
+    <div class="top-nav">
+        <button class="nav-btn key-btn" onclick="window.open('https://samsun123197.github.io/harf-donusturucu/', '_blank')">
+            🔑 Key-Şifre İşlemi için tıklayın
+        </button>
+        <button class="nav-btn dolap-btn" onclick="window.open('https://samsun123197.github.io/barkod_sorgu/', '_blank')">
+            📋 Dolap Bilgi Ekranı için tıklayın
+        </button>
+    </div>
+
+    <h2>Müşteri Bilgi Portalı</h2>
     
-    <label for="musteriKodu">Arama Yapın (Kod veya Ad):</label>
-    <input type="text" id="musteriKodu" placeholder="Müşteri Kodu veya Adı Girin" onkeypress="if(event.keyCode == 13) sorgula()">
-    <button onclick="sorgula()" class="sorgula-btn">Sorgula</button>
+    <div class="search-area">
+        <input type="text" id="searchInput" placeholder="Kod veya isim..." onkeypress="if(event.keyCode == 13) sorgula()">
+        <button onclick="sorgula()" class="sorgula-btn">Sorgula</button>
+    </div>
 
-    <p id="yukleniyor">Veriler Google Sheets'ten yükleniyor, lütfen bekleyiniz...</p>
-
-    <hr>
-    <h2>Sorgu Sonucu</h2>
     <div id="sonucAlani"></div>
     <div id="haritaAlani"></div>
+</div>
 
-    <script>
-        const veriDosyasiURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRkONEBGWF-u3K_tU6kNvsHUpO9LUx_ZDUCvy_SCCcjWh0K7jnmGeynwM9XAUwwww/pub?output=csv';
-        let tumMusteriler = [];
-        let harita = null; 
-        
-        const ciktiAlanlari = [
-            "Müşteri Kodu", "Müşteri Adı", "Enlem", "Boylam", "Durumu", 
-            "Gsm", "Kanal", "Tip", "Alt Tip", "Adres", 
-            "İli", "İlçesi", "Dolap Sayısı", "Rutta mı", "Satışa Kapalımı", "Bakiye"
-        ];
-        
-        function ekstreIndir(musteriKodu, mod) {
-            const url = `https://vp.golfdondurma.com.tr/SAASReport/ReportView.aspx?reportId=31885200&ReportTypeId=2&filters=0;134010607746|2;${musteriKodu}|1;161|3;01.01.2026|4;31.12.2026|5;|6;|7;&RoleId=134053451661&LanguageId=1&UserId=134053530632&Mode=${mod}&Token=83b27236-1b41-4ea7-84fb-95467bee94a0`;
-            window.open(url, '_blank');
-        }
+<script>
+    const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRkONEBGWF-u3K_tU6kNvsHUpO9LUx_ZDUCvy_SCCcjWh0K7jnmGeynwM9XAUwwww/pub?output=csv';
+    let dataStore = [];
+    let leafletMap = null;
 
-        function panoyaKopyala(metin, elementId) {
-            navigator.clipboard.writeText(metin).then(() => {
-                const button = document.getElementById(elementId);
-                button.textContent = 'Kopyalandı!';
-                setTimeout(() => { button.textContent = 'Panoya Kopyala'; }, 1500);
+    Papa.parse(csvUrl, {
+        download: true, header: true, skipEmptyLines: true,
+        complete: function(results) { dataStore = results.data; }
+    });
+
+    function sorgula() {
+        const query = document.getElementById('searchInput').value.trim().toUpperCase();
+        if(!query) return;
+
+        const filtered = dataStore.filter(m => 
+            String(m['Müşteri Kodu']).includes(query) || 
+            String(m['Müşteri Adı']).toUpperCase().includes(query)
+        );
+
+        if (filtered.length === 1) {
+            renderMusteri(filtered[0]);
+        } else if (filtered.length > 1) {
+            let listHtml = '<div style="border:1px solid #ccc; border-radius:8px; overflow:hidden;">';
+            filtered.slice(0, 15).forEach(m => {
+                listHtml += `<div class="liste-item" onclick="selectAndSearch('${m['Müşteri Kodu']}')">${m['Müşteri Kodu']} - ${m['Müşteri Adı']}</div>`;
             });
+            document.getElementById('sonucAlani').innerHTML = listHtml + '</div>';
+            document.getElementById('haritaAlani').style.display = 'none';
+        } else {
+            document.getElementById('sonucAlani').innerHTML = '<p style="color:red; font-weight:bold; text-align:center;">Müşteri bulunamadı.</p>';
         }
-        
-        Papa.parse(veriDosyasiURL, {
-            download: true,
-            header: true,
-            skipEmptyLines: true,
-            complete: function(results) {
-                tumMusteriler = results.data;
-                document.getElementById('yukleniyor').style.display = 'none';
-            }
+    }
+
+    function selectAndSearch(kod) {
+        document.getElementById('searchInput').value = kod;
+        sorgula();
+    }
+
+    function renderMusteri(m) {
+        const mKodu = m['Müşteri Kodu'];
+        const bakiye = m['Bakiye'] || "0,00";
+        const bakiyeRenk = bakiye.includes('-') ? '#28a745' : '#d32f2f';
+        const rawLat = String(m['Enlem'] || '0').replace(',', '.').trim();
+        const rawLon = String(m['Boylam'] || '0').replace(',', '.').trim();
+        const coordText = (rawLat !== '0' && rawLat !== '') ? `${rawLat},${rawLon}` : 'Koordinat Tanımsız';
+
+        let html = `
+            <table>
+                <tr><th>Müşteri</th><td><strong>${mKodu}</strong><br>${m['Müşteri Adı']}</td></tr>
+                <tr><th>Kanal</th><td>${m['Kanal'] || "-"}</td></tr>
+                <tr><th>Adres</th><td>${m['Adres'] || "-"}</td></tr>
+                
+                <tr style="display:none;"><th>Bakiye</th><td class="bakiye-val" style="color:${bakiyeRenk}">${bakiye} TL</td></tr>
+                
+                <tr>
+                    <th>Dolap Bilgisi</th>
+                    <td>
+                        <b>${m['Dolap Sayısı'] || "0"} Adet</b> 
+                        <a href="https://samsun123197.github.io/barkod_sorgu/?query=${mKodu}" target="_blank" class="detail-link">[Detay Gör]</a>
+                    </td>
+                </tr>
+
+                <tr>
+                    <th>Satış Analizi</th>
+                    <td>
+                        <div class="btn-group">
+                            <button class="action-btn detay-bg-alt" onclick="openDetail('${mKodu}', '2025')">2025 Analiz</button>
+                            <button class="action-btn detay-bg" onclick="openDetail('${mKodu}', '2026')">2026 Analiz</button>
+                        </div>
+                    </td>
+                </tr>
+
+                <tr>
+                    <th>Cari İşlemler</th>
+                    <td>
+                        <div class="btn-group">
+                            <button class="action-btn excel-bg" onclick="openReport('${mKodu}', 'ExportToExcel')">Excel</button>
+                            <button class="action-btn pdf-bg" onclick="openReport('${mKodu}', 'ExportToPDF')">PDF</button>
+                        </div>
+                    </td>
+                </tr>
+
+                <tr>
+                    <th>Konum İşlemi</th>
+                    <td>
+                        <span style="display:block; margin-bottom:5px;">${coordText}</span>
+                        ${coordText !== 'Koordinat Tanımsız' ? `
+                            <button class="copy-btn" id="btnCopy" onclick="copyToClipboard('${coordText}')">Koordinatı Kopyala</button><br>
+                            <a href="https://www.google.com/maps?q=${rawLat},${rawLon}" target="_blank" class="map-link">📍 Haritalarda Aç</a>
+                        ` : '-'}
+                    </td>
+                </tr>
+            </table>
+        `;
+
+        document.getElementById('sonucAlani').innerHTML = html;
+
+        if(coordText !== 'Koordinat Tanımsız') {
+            const hDiv = document.getElementById('haritaAlani');
+            hDiv.style.display = 'block';
+            if(leafletMap) leafletMap.remove();
+            leafletMap = L.map('haritaAlani').setView([parseFloat(rawLat), parseFloat(rawLon)], 15);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(leafletMap);
+            L.marker([parseFloat(rawLat), parseFloat(rawLon)]).addTo(leafletMap).bindPopup(m['Müşteri Adı']).openPopup();
+        } else {
+            document.getElementById('haritaAlani').style.display = 'none';
+        }
+    }
+
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(() => {
+            const btn = document.getElementById('btnCopy');
+            btn.textContent = 'Kopyalandı!';
+            setTimeout(() => btn.textContent = 'Koordinatı Kopyala', 1500);
         });
+    }
 
-        function sorgula() {
-            const kodInput = document.getElementById('musteriKodu');
-            const aramaMetni = kodInput.value.trim().toUpperCase();
-            const sonucDiv = document.getElementById('sonucAlani');
-            const haritaDiv = document.getElementById('haritaAlani');
-            
-            haritaDiv.innerHTML = '';
-            if (aramaMetni === "") return;
+    function openReport(kod, mode) {
+        window.open(`https://vp.golfdondurma.com.tr/SAASReport/ReportView.aspx?reportId=31885200&ReportTypeId=2&filters=0;134010607746|2;${kod}|1;161|3;01.01.2026|4;31.12.2026|5;|6;|7;&RoleId=134053451661&LanguageId=1&UserId=134053530632&Mode=${mode}&Token=83b27236-1b41-4ea7-84fb-95467bee94a0`, '_blank');
+    }
 
-            const eslesenMusteriler = tumMusteriler.filter(m => {
-                const kod = String(m['Müşteri Kodu'] || '').toUpperCase();
-                const ad = String(m['Müşteri Adı'] || '').toUpperCase();
-                return kod.includes(aramaMetni) || ad.includes(aramaMetni);
-            });
-            
-            if (eslesenMusteriler.length === 1) {
-                const m = eslesenMusteriler[0];
-                const enlemStr = String(m['Enlem']).replace(',', '.').trim();
-                const boylamStr = String(m['Boylam']).replace(',', '.').trim();
-                const lat = parseFloat(enlemStr);
-                const lon = parseFloat(boylamStr);
-                const mKodu = m['Müşteri Kodu'];
-
-                const koordinatMetni = (!isNaN(lat) && !isNaN(lon) && lat !== 0 && lon !== 0) ? `${lat},${lon}` : 'Koordinat Yok/Hatalı';
-                
-                let html = '<table><thead><tr><th>Alan Adı</th><th>Değer</th></tr></thead><tbody>';
-                
-                // Cari Ekstre Butonları
-                html += `<tr><td><strong>Cari Ekstre</strong></td><td>
-                    <div class="btn-group">
-                        <button onclick="ekstreIndir('${mKodu}', 'ExportToExcel')" class="download-btn excel-btn">📊 Excel</button>
-                        <button onclick="ekstreIndir('${mKodu}', 'ExportToPDF')" class="download-btn pdf-btn">📄 PDF</button>
-                    </div>
-                </td></tr>`;
-
-                ciktiAlanlari.forEach(alan => {
-                    let deger = m[alan] !== undefined && m[alan] !== null ? m[alan] : '-';
-                    
-                    // Rutta mı ve Satışa Kapalı mı Dönüşümleri
-                    if (alan === 'Rutta mı' || alan === 'Satışa Kapalımı') {
-                        deger = (deger == 1 || deger == '1' || deger == '1,00') ? 'Evet' : 'Hayır';
-                    }
-
-                    if (alan === 'Dolap Sayısı') {
-                        const link = `https://samsun123197.github.io/barkod_sorgu/?query=${mKodu}`;
-                        html += `<tr><td><strong>${alan}</strong></td><td>${deger} <a href="${link}" target="_blank" style="margin-left: 10px; font-weight: bold; color: #dc3545; text-decoration: none;">[Detay]</a></td></tr>`;
-                    } else {
-                        html += `<tr><td><strong>${alan}</strong></td><td>${deger}</td></tr>`;
-                    }
-                });
-                
-                // ✨ Kopyalanacak Koordinat ve Harita Linki Kısımları
-                if (koordinatMetni !== 'Koordinat Yok/Hatalı') {
-                     html += `<tr><td><strong>Kopyalanacak Koordinat</strong></td><td>
-                        <span>${koordinatMetni}</span>
-                        <button class="copy-btn" id="copyButton" onclick="panoyaKopyala('${koordinatMetni}', 'copyButton')">Panoya Kopyala</button>
-                     </td></tr>`;
-                     
-                     const mapsUrl = `https://www.google.com/maps?q=${lat},${lon}`;
-                     html += `<tr><td><strong>Haritada Göster</strong></td><td><a href="${mapsUrl}" target="_blank" style="color: #007bff; font-weight: bold;">Google Haritalar'da Aç</a></td></tr>`;
-                }
-
-                html += '</tbody></table>';
-                sonucDiv.innerHTML = html;
-                
-                if (koordinatMetni !== 'Koordinat Yok/Hatalı') {
-                    if (harita) harita.remove();
-                    harita = L.map('haritaAlani').setView([lat, lon], 13);
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(harita);
-                    L.marker([lat, lon]).addTo(harita).bindPopup(`<b>${m['Müşteri Adı']}</b>`).openPopup();
-                }
-            } else if (eslesenMusteriler.length > 1) {
-                let html = `<p class="hata">Birden fazla sonuç bulundu:</p><ul>`;
-                eslesenMusteriler.forEach(m => {
-                     html += `<li><a href="#" onclick="document.getElementById('musteriKodu').value='${m['Müşteri Kodu']}'; sorgula(); return false;">${m['Müşteri Kodu']} - ${m['Müşteri Adı']}</a></li>`;
-                });
-                sonucDiv.innerHTML = html + '</ul>';
-            } else {
-                sonucDiv.innerHTML = `<p class="hata">Müşteri bulunamadı.</p>`;
-            }
-        }
-    </script>
+    function openDetail(kod, yil) {
+        const start = yil + "0101";
+        const end = yil + "1231";
+        window.open(`https://vp.golfdondurma.com.tr/SAASReport/ReportView.aspx?CubeReportId=350012883&Values=0;TO_DATE(\`${start}\`,\`YYYYMMDD\`)|1;TO_DATE(\`${end}\`,\`YYYYMMDD\`)|2;134010607746|13;|14;|15;|6;|10;\`${kod}\`|19;(-1,1927425,597953372,964276816,102319271251,103567574790)|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;|;&RoleId=134053451661&LanguageId=1&UserId=134053530632&ReportTypeId=1&RW=350012895,350012886,350012896,104201257687,104201257688,350012887,350012888&CL=&DT=133015712793,350012899&Mode=ExportToPDF&Token=e848a86f-4f25-4077-8d85-f864885d0c04`, '_blank');
+    }
+</script>
 </body>
 </html>
