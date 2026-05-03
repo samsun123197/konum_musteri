@@ -229,7 +229,8 @@
     }
 
     function openReport(kod, mode) {
-        window.open(`https://vp.golfdondurma.com.tr/SAASReport/ReportView.aspx?reportId=31885200&ReportTypeId=2&filters=0;134010607746|2;${kod}|1;161|3;01.01.2026|4;31.12.2026|5;|6;|7;&RoleId=134053451661&LanguageId=1&UserId=134053530632&Mode=${mode}&Token=83b27236-1b41-4ea7-84fb-95467bee94a0`, '_blank');
+        // Yeni link yapısı ve güncel token ile güncellendi
+        window.open(`https://vp.golfdondurma.com.tr/SAASReport/ReportView.aspx?reportId=1044704&ReportTypeId=2&filters=0;134010607746|6;|1;|2;${kod}|7;|5;|3;01.01.2026|4;31.12.2026&RoleId=134053451661&LanguageId=1&UserId=134053530632&Mode=${mode}&Token=2dcb5ad4-f730-404c-947f-b1e58a4d1248`, '_blank');
     }
 
     function openDetail(kod, yil) {
