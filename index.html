@@ -54,6 +54,8 @@
         .bakiye-val { font-size: 18px; font-weight: bold; font-family: 'Courier New', monospace; }
         
         .copy-btn { background-color: #007bff; color: white; border: none; padding: 8px 10px; cursor: pointer; border-radius: 6px; font-size: 12px; margin-top: 5px; display: inline-block; }
+        /* Yeni eklenen Whatsapp/Hata butonu stili */
+        .wp-btn { background-color: #e74c3c; color: white; border: none; padding: 8px 10px; cursor: pointer; border-radius: 6px; font-size: 12px; margin-top: 5px; display: inline-block; font-weight: bold; }
         .map-link { color: #007bff; font-weight: bold; text-decoration: none; display: inline-block; padding: 5px 0; }
         .detail-link { margin-left: 5px; font-weight: bold; color: #dc3545; text-decoration: none; font-size: 15px; }
 
@@ -98,7 +100,6 @@
         <button class="nav-btn dolap-btn" onclick="window.open('https://samsun123197.github.io/barkod_sorgu/', '_blank')">
             📋 Dolap Bilgi Ekranı için tıklayın
         </button>
-        <!-- Yeni eklenen buton -->
         <button class="nav-btn" style="background-color: #673ab7;" onclick="window.open('https://samsun123197.github.io/golfdoc/', '_blank')">
             📄 Golf Dokümanları için tıklayın
         </button>
@@ -155,6 +156,7 @@
 
     function renderMusteri(m) {
         const mKodu = m['Müşteri Kodu'];
+        const mAdi = m['Müşteri Adı'] || "";
         const bakiye = m['Bakiye'] || "0,00";
         const bakiyeRenk = bakiye.includes('-') ? '#28a745' : '#d32f2f';
         const rawLat = String(m['Enlem'] || '0').replace(',', '.').trim();
@@ -163,7 +165,7 @@
 
         let html = `
             <table>
-                <tr><th>Müşteri</th><td><strong>${mKodu}</strong><br>${m['Müşteri Adı']}</td></tr>
+                <tr><th>Müşteri</th><td><strong>${mKodu}</strong><br>${mAdi}</td></tr>
                 <tr><th>Kanal</th><td>${m['Kanal'] || "-"}</td></tr>
                 <tr><th>Adres</th><td>${m['Adres'] || "-"}</td></tr>
                 
@@ -201,10 +203,11 @@
                     <th>Konum İşlemi</th>
                     <td>
                         <span style="display:block; margin-bottom:5px;">${coordText}</span>
+                        <button class="wp-btn" onclick="hataliKonumBildir('${mKodu}', '${mAdi.replace(/'/g, "\\'")}')">⚠️ HATALI KONUM BİLDİR</button>
                         ${coordText !== 'Koordinat Tanımsız' ? `
-                            <button class="copy-btn" id="btnCopy" onclick="copyToClipboard('${coordText}')">Koordinatı Kopyala</button><br>
+                            <br><button class="copy-btn" id="btnCopy" onclick="copyToClipboard('${coordText}')">Koordinatı Kopyala</button><br>
                             <a href="https://www.google.com/maps?q=${rawLat},${rawLon}" target="_blank" class="map-link">📍 Haritalarda Aç</a>
-                        ` : '-'}
+                        ` : ''}
                     </td>
                 </tr>
             </table>
@@ -232,8 +235,37 @@
         });
     }
 
+    // Yeni eklenen WhatsApp Hatali Konum Bildirme Fonksiyonu
+    function hataliKonumBildir(kod, ad) {
+        if (!navigator.geolocation) {
+            alert("Tarayıcınız veya cihazınız konum bilgisini desteklemiyor.");
+            return;
+        }
+
+        // Kullanıcıya konum izni penceresi açar ve güncel koordinatları çeker
+        navigator.geolocation.getCurrentPosition(function(position) {
+            const guncelLat = position.coords.latitude;
+            const guncelLon = position.coords.longitude;
+            const koordinatlar = `${guncelLat},${guncelLon}`;
+
+            // Gönderilecek mesaj şablonu
+            const mesaj = `Merhaba "${kod}" - "${ad}" müşterinin güncel konumu "${koordinatlar}" şeklindedir. Konum düzeltilmesi için yardımcı olur musunuz?`;
+            
+            // Mesajı url yapısına uygun hale getiriyoruz
+            const wpUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(mesaj)}`;
+            
+            // WhatsApp'ı yeni sekmede açar
+            window.open(wpUrl, '_blank');
+        }, function(error) {
+            // Konum izni verilmezse veya hata alınırsa çalışacak alan
+            alert("Güncel konumunuz alınamadı. Lütfen cihazınızın konum (GPS) servisinin açık olduğundan ve bu siteye konum izni verdiğinizden emin olun.");
+        }, {
+            enableHighAccuracy: true, // Yüksek doğrulukta (GPS) konumu zorlar
+            timeout: 8000
+        });
+    }
+
     function openReport(kod, mode) {
-        // Yeni link yapısı ve güncel token ile güncellendi
         window.open(`https://vp.golfdondurma.com.tr/SAASReport/ReportView.aspx?reportId=1044704&ReportTypeId=2&filters=0;134010607746|6;|1;|2;${kod}|7;|5;|3;01.01.2026|4;31.12.2026&RoleId=134053451661&LanguageId=1&UserId=134053530632&Mode=${mode}&Token=2dcb5ad4-f730-404c-947f-b1e58a4d1248`, '_blank');
     }
 
