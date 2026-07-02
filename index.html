@@ -246,7 +246,7 @@
             const guncelLon = position.coords.longitude;
             const koordinatlar = `${guncelLat},${guncelLon}`;
 
-            const mesaj = `Merhaba "${kod}" - "${ad}" müşterinin güncel konumu "${koordinatlar}" şeklindedir. Konum düzeltilmesi için yardımcı olur musunuz?`;
+            const mesaj = `Merhaba ${kod} - ${ad} müşterinin güncel konumu "${koordinatlar}" şeklindedir. Konum düzeltilmesi için yardımcı olur musunuz?`;
             const wpUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(mesaj)}`;
             
             window.open(wpUrl, '_blank');
