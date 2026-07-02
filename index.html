@@ -54,7 +54,7 @@
         .bakiye-val { font-size: 18px; font-weight: bold; font-family: 'Courier New', monospace; }
         
         .copy-btn { background-color: #007bff; color: white; border: none; padding: 8px 10px; cursor: pointer; border-radius: 6px; font-size: 12px; margin-top: 5px; display: inline-block; }
-        /* Yeni eklenen Whatsapp/Hata butonu stili */
+        /* Whatsapp/Hata butonu stili */
         .wp-btn { background-color: #e74c3c; color: white; border: none; padding: 8px 10px; cursor: pointer; border-radius: 6px; font-size: 12px; margin-top: 5px; display: inline-block; font-weight: bold; }
         .map-link { color: #007bff; font-weight: bold; text-decoration: none; display: inline-block; padding: 5px 0; }
         .detail-link { margin-left: 5px; font-weight: bold; color: #dc3545; text-decoration: none; font-size: 15px; }
@@ -203,11 +203,11 @@
                     <th>Konum İşlemi</th>
                     <td>
                         <span style="display:block; margin-bottom:5px;">${coordText}</span>
-                        <button class="wp-btn" onclick="hataliKonumBildir('${mKodu}', '${mAdi.replace(/'/g, "\\'")}')">⚠️ HATALI KONUM BİLDİR</button>
                         ${coordText !== 'Koordinat Tanımsız' ? `
-                            <br><button class="copy-btn" id="btnCopy" onclick="copyToClipboard('${coordText}')">Koordinatı Kopyala</button><br>
-                            <a href="https://www.google.com/maps?q=${rawLat},${rawLon}" target="_blank" class="map-link">📍 Haritalarda Aç</a>
+                            <button class="copy-btn" id="btnCopy" onclick="copyToClipboard('${coordText}')">Koordinatı Kopyala</button><br>
+                            <a href="https://www.google.com/maps?q=${rawLat},${rawLon}" target="_blank" class="map-link">📍 Haritalarda Aç</a><br>
                         ` : ''}
+                        <button class="wp-btn" onclick="hataliKonumBildir('${mKodu}', '${mAdi.replace(/'/g, "\\'")}')">⚠️ HATALI KONUM BİLDİR</button>
                     </td>
                 </tr>
             </table>
@@ -235,32 +235,25 @@
         });
     }
 
-    // Yeni eklenen WhatsApp Hatali Konum Bildirme Fonksiyonu
     function hataliKonumBildir(kod, ad) {
         if (!navigator.geolocation) {
             alert("Tarayıcınız veya cihazınız konum bilgisini desteklemiyor.");
             return;
         }
 
-        // Kullanıcıya konum izni penceresi açar ve güncel koordinatları çeker
         navigator.geolocation.getCurrentPosition(function(position) {
             const guncelLat = position.coords.latitude;
             const guncelLon = position.coords.longitude;
             const koordinatlar = `${guncelLat},${guncelLon}`;
 
-            // Gönderilecek mesaj şablonu
             const mesaj = `Merhaba "${kod}" - "${ad}" müşterinin güncel konumu "${koordinatlar}" şeklindedir. Konum düzeltilmesi için yardımcı olur musunuz?`;
-            
-            // Mesajı url yapısına uygun hale getiriyoruz
             const wpUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(mesaj)}`;
             
-            // WhatsApp'ı yeni sekmede açar
             window.open(wpUrl, '_blank');
         }, function(error) {
-            // Konum izni verilmezse veya hata alınırsa çalışacak alan
             alert("Güncel konumunuz alınamadı. Lütfen cihazınızın konum (GPS) servisinin açık olduğundan ve bu siteye konum izni verdiğinizden emin olun.");
         }, {
-            enableHighAccuracy: true, // Yüksek doğrulukta (GPS) konumu zorlar
+            enableHighAccuracy: true,
             timeout: 8000
         });
     }
