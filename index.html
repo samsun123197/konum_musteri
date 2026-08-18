@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sayfada Çalışma Var!</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #1a1a1a;
+            color: #ffffff;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Arka plan şerit deseni */
+        .stripes {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 10px;
+            background: repeating-linear-gradient(
+                -45deg,
+                #ffcc00,
+                #ffcc00 20px,
+                #1a1a1a 20px,
+                #1a1a1a 40px
+            );
+        }
+
+        .container {
+            text-align: center;
+            padding: 40px 20px;
+            max-width: 600px;
+            z-index: 1;
+        }
+
+        /* İkaz / Uyarı İkonu */
+        .warning-icon {
+            font-size: 80px;
+            color: #ffcc00;
+            margin-bottom: 20px;
+            display: inline-block;
+            animation: pulse 1.5s infinite alternate;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.8; }
+            100% { transform: scale(1.1); opacity: 1; text-shadow: 0 0 20px rgba(255, 204, 0, 0.6); }
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: #ffcc00;
+            margin-bottom: 15px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        p {
+            font-size: 1.1rem;
+            color: #cccccc;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        /* Kazı ve İşçi Görsel Alanı */
+        .worker-illustration {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            gap: 20px;
+            margin: 30px 0;
+            height: 120px;
+            border-bottom: 4px solid #ffcc00;
+            padding-bottom: 10px;
+        }
+
+        .worker {
+            font-size: 60px;
+            animation: dig 1.2s infinite ease-in-out alternate;
+        }
+
+        .worker-2 {
+            font-size: 50px;
+            animation: dig 1.2s infinite ease-in-out alternate-reverse;
+        }
+
+        .cone {
+            font-size: 40px;
+        }
+
+        /* Kazı yapma hareketi animasyonu */
+        @keyframes dig {
+            0% {
+                transform: rotate(0deg) translateY(0);
+            }
+            100% {
+                transform: rotate(-15deg) translateY(-10px);
+            }
+        }
+
+        /* Alt Durum Çubuğu */
+        .status-bar {
+            background-color: #2a2a2a;
+            border-radius: 20px;
+            height: 12px;
+            width: 100%;
+            overflow: hidden;
+            margin-top: 20px;
+            border: 1px solid #444;
+        }
+
+        .status-progress {
+            background: linear-gradient(90deg, #ff8c00, #ffcc00);
+            height: 100%;
+            width: 65%; /* İlerleme yüzdesi */
+            border-radius: 20px;
+            animation: progress-animation 2s infinite linear;
+        }
+
+        .footer-note {
+            margin-top: 15px;
+            font-size: 0.85rem;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Üst ikaz şeridi -->
+    <div class="stripes"></div>
+
+    <div class="container">
+        <div class="warning-icon">⚠️</div>
+        
+        <h1>SAYFADA ÇALIŞMA VAR</h1>
+        
+        <p>Sizlere daha iyi bir deneyim sunabilmek için sistemimizde bakım ve geliştirme çalışmaları yapıyoruz. Çok yakında tekrar hizmetinizde olacağız.</p>
+
+        <!-- Kazı yapan işçi animasyon alanı -->
+        <div class="worker-illustration">
+            <span class="cone">🚧</span>
+            <span class="worker" title="Çalışan İşçi">👷‍♂️</span>
+            <span class="worker-2" title="Kazı Ekibi">⛏️</span>
+            <span class="cone">🚧</span>
+        </div>
+
+        <!-- İlerleme Çubuğu -->
+        <div class="status-bar">
+            <div class="status-progress"></div>
+        </div>
+
+        <div class="footer-note">Anlayışınız için teşekkür ederiz.</div>
+    </div>
+
+</body>
+</html>
