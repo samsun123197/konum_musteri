@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kullanıcı Girişi</title>
-    <!-- Excel (XLSX) Okumak İçin Kütüphane -->
+    <!-- Excel (XLSX) Okumak İçin SheetJS Kütüphanesi -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         * {
@@ -179,10 +179,14 @@
 </div>
 
 <script>
-// Telefon numaralarını sadece rakamlardan oluşacak şekilde temizleyen yardımcı fonksiyon
+// Telefon numaralarını standart 10 haneli formata getiren yardımcı fonksiyon
 function cleanPhone(phoneStr) {
     if (!phoneStr) return '';
-    return String(phoneStr).replace(/\D/g, '').replace(/^90/, ''); // sadece rakamlar
+    let cleaned = String(phoneStr).replace(/\D/g, ''); // Sadece rakamları al
+    if (cleaned.length >= 10) {
+        cleaned = cleaned.slice(-10); // Başındaki 0 veya +90'ı göz ardı edip son 10 hanesini alır
+    }
+    return cleaned;
 }
 
 // Sayfa yüklendiğinde Beni Hatırla kontrolü
@@ -271,7 +275,8 @@ document.getElementById('whatsappForm').addEventListener('submit', async functio
     e.preventDefault();
     
     const vpCode = document.getElementById('vpCode').value.trim();
-    const inputPhone = cleanPhone(document.getElementById('phone').value.trim());
+    const rawInputPhone = document.getElementById('phone').value.trim();
+    const inputPhone = cleanPhone(rawInputPhone);
     
     modalErrorDiv.style.display = 'none';
 
@@ -287,7 +292,7 @@ document.getElementById('whatsappForm').addEventListener('submit', async functio
         const firstSheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[firstSheetName];
 
-        // Excel verisini array matris olarak al (Header'lar dahil)
+        // Excel verisini matris olarak al
         const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
         let matchFound = false;
@@ -297,7 +302,7 @@ document.getElementById('whatsappForm').addEventListener('submit', async functio
             const row = rows[i];
             if (!row || row.length === 0) continue;
 
-            const excelPhone = cleanPhone(row[5]); // F Sütunu
+            const excelPhone = cleanPhone(row[5]); // F Sütunu (Standart 10 hane yapıldı)
             const excelUser = row[6] ? String(row[6]).trim() : ''; // G Sütunu
 
             if (excelUser === vpCode && excelPhone === inputPhone) {
@@ -312,7 +317,7 @@ document.getElementById('whatsappForm').addEventListener('submit', async functio
             const message = `🔐 *Giriş Şifre Talebi*\n\n` +
                             `Merhaba, sisteme giriş yapabilmek için şifre talebinde bulunuyorum.\n\n` +
                             `👤 *VP Kullanıcı Kodu:* ${vpCode}\n` +
-                            `📞 *Telefon:* ${document.getElementById('phone').value.trim()}\n\n` +
+                            `📞 *Telefon:* ${rawInputPhone}\n\n` +
                             `Lütfen hesabım için tanımlanan şifre bilgilerini iletir misiniz?`;
 
             const encodedMessage = encodeURIComponent(message);
