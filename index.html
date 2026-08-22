@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kullanıcı Girişi</title>
+    <!-- Excel (XLSX) Okumak İçin Kütüphane -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -40,7 +42,9 @@
             color: #666;
             font-size: 14px;
         }
-        .form-group input {
+        .form-group input[type="text"],
+        .form-group input[type="password"],
+        .form-group input[type="tel"] {
             width: 100%;
             padding: 10px;
             border: 1px solid #ddd;
@@ -72,6 +76,62 @@
             margin-top: 10px;
             display: none;
         }
+        .forgot-link {
+            display: block;
+            text-align: center;
+            margin-top: 15px;
+            font-size: 13px;
+            color: #007bff;
+            text-decoration: none;
+        }
+        .forgot-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Modal (Pop-up) Stilleri */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-card {
+            background: #fff;
+            padding: 25px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 340px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            position: relative;
+        }
+        .modal-card h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 18px;
+            color: #333;
+            text-align: center;
+        }
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 20px;
+            cursor: pointer;
+            color: #888;
+        }
+        .whatsapp-btn {
+            background-color: #25d366;
+            margin-top: 10px;
+        }
+        .whatsapp-btn:hover {
+            background-color: #128c7e;
+        }
     </style>
 </head>
 <body>
@@ -87,26 +147,74 @@
             <label for="password">Şifre</label>
             <input type="password" id="password" required>
         </div>
+        <div class="form-group" style="display: flex; align-items: center; gap: 8px;">
+            <input type="checkbox" id="rememberMe" style="width: auto; cursor: pointer;">
+            <label for="rememberMe" style="margin-bottom: 0; cursor: pointer; user-select: none;">Beni Hatırla</label>
+        </div>
         <button type="submit">Giriş</button>
         <div id="errorMessage" class="error-message">Kullanıcı adı veya şifre hatalı!</div>
     </form>
+    
+    <a href="#" class="forgot-link" id="openModalBtn">Şifre Talebinde Bulun</a>
+</div>
+
+<!-- Şifre Talebi Modal Penceresi -->
+<div class="modal-overlay" id="requestModal">
+    <div class="modal-card">
+        <span class="close-btn" id="closeModalBtn">&times;</span>
+        <h3>Şifre Talebi Formu</h3>
+        <form id="whatsappForm">
+            <div class="form-group">
+                <label for="vpCode">VP Kullanıcı Kodu</label>
+                <input type="text" id="vpCode" placeholder="Kullanıcı kodunuzu girin" required>
+            </div>
+            <div class="form-group">
+                <label for="phone">Telefon Numarası</label>
+                <input type="tel" id="phone" placeholder="Örn: 05XXXXXXXXX" required>
+            </div>
+            <button type="submit" class="whatsapp-btn">Kontrol Et & WhatsApp ile Gönder</button>
+            <div id="modalErrorMessage" class="error-message"></div>
+        </form>
+    </div>
 </div>
 
 <script>
+// Telefon numaralarını sadece rakamlardan oluşacak şekilde temizleyen yardımcı fonksiyon
+function cleanPhone(phoneStr) {
+    if (!phoneStr) return '';
+    return String(phoneStr).replace(/\D/g, '').replace(/^90/, ''); // sadece rakamlar
+}
+
+// Sayfa yüklendiğinde Beni Hatırla kontrolü
+document.addEventListener('DOMContentLoaded', function() {
+    const savedUser = localStorage.getItem('remember_username');
+    const savedPass = localStorage.getItem('remember_password');
+    const rememberCheckbox = document.getElementById('rememberMe');
+
+    if (savedUser && savedPass) {
+        document.getElementById('username').value = savedUser;
+        document.getElementById('password').value = savedPass;
+        rememberCheckbox.checked = true;
+    }
+});
+
+// Giriş Formu İşlemleri
 document.getElementById('loginForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     
     const userInput = document.getElementById('username').value.trim();
     const passInput = document.getElementById('password').value.trim();
+    const rememberMe = document.getElementById('rememberMe').checked;
     const errorDiv = document.getElementById('errorMessage');
 
+    errorDiv.style.display = 'none';
+
     try {
-        // kullanicilar.txt dosyasını oku
         const response = await fetch('kullanicilar.txt');
         if (!response.ok) throw new Error('Kullanıcı dosyası bulunamadı.');
         
         const text = await response.text();
-        const lines = text.split('\n');
+        const lines = text.split(/\r?\n/);
         
         let authenticated = false;
 
@@ -122,15 +230,104 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
         }
 
         if (authenticated) {
-            // Giriş başarılı: Oturumu kaydet ve ana sayfaya yönlendir
+            if (rememberMe) {
+                localStorage.setItem('remember_username', userInput);
+                localStorage.setItem('remember_password', passInput);
+            } else {
+                localStorage.removeItem('remember_username');
+                localStorage.removeItem('remember_password');
+            }
+
             sessionStorage.setItem('isLoggedIn', 'true');
             sessionStorage.setItem('username', userInput);
             window.location.href = 'index11.html';
         } else {
+            errorDiv.innerText = "Kullanıcı adı veya şifre hatalı!";
             errorDiv.style.display = 'block';
         }
     } catch (err) {
         alert('Giriş yapılırken bir hata oluştu: ' + err.message);
+    }
+});
+
+// Modal Aç/Kapat Mantığı
+const modal = document.getElementById('requestModal');
+const modalErrorDiv = document.getElementById('modalErrorMessage');
+
+document.getElementById('openModalBtn').addEventListener('click', (e) => {
+    e.preventDefault();
+    modalErrorDiv.style.display = 'none';
+    modal.style.display = 'flex';
+});
+document.getElementById('closeModalBtn').addEventListener('click', () => {
+    modal.style.display = 'none';
+});
+window.addEventListener('click', (e) => {
+    if (e.target === modal) modal.style.display = 'none';
+});
+
+// Excel Dosyasını Doğrulama ve WhatsApp Yönlendirme İşlemi
+document.getElementById('whatsappForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const vpCode = document.getElementById('vpCode').value.trim();
+    const inputPhone = cleanPhone(document.getElementById('phone').value.trim());
+    
+    modalErrorDiv.style.display = 'none';
+
+    try {
+        // Excel dosyasını oku
+        const response = await fetch('Personel Kullanici Bilgileri.xlsx');
+        if (!response.ok) throw new Error('Personel Kullanici Bilgileri.xlsx dosyasına erişilemedi.');
+
+        const arrayBuffer = await response.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+
+        // İlk çalışma sayfasını al
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+
+        // Excel verisini array matris olarak al (Header'lar dahil)
+        const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+        let matchFound = false;
+
+        // F sütunu = Index 5 (Cep Telefonu), G sütunu = Index 6 (Kullanıcı Adı)
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row || row.length === 0) continue;
+
+            const excelPhone = cleanPhone(row[5]); // F Sütunu
+            const excelUser = row[6] ? String(row[6]).trim() : ''; // G Sütunu
+
+            if (excelUser === vpCode && excelPhone === inputPhone) {
+                matchFound = true;
+                break;
+            }
+        }
+
+        if (matchFound) {
+            // Bilgiler doğrulandı, WhatsApp'a yönlendir
+            const targetPhone = "905363125549";
+            const message = `🔐 *Giriş Şifre Talebi*\n\n` +
+                            `Merhaba, sisteme giriş yapabilmek için şifre talebinde bulunuyorum.\n\n` +
+                            `👤 *VP Kullanıcı Kodu:* ${vpCode}\n` +
+                            `📞 *Telefon:* ${document.getElementById('phone').value.trim()}\n\n` +
+                            `Lütfen hesabım için tanımlanan şifre bilgilerini iletir misiniz?`;
+
+            const encodedMessage = encodeURIComponent(message);
+            const whatsappUrl = `https://wa.me/${targetPhone}?text=${encodedMessage}`;
+
+            window.open(whatsappUrl, '_blank');
+            modal.style.display = 'none';
+        } else {
+            modalErrorDiv.innerText = "Girilen Kullanıcı Kodu ile Telefon Numarası eşleşmiyor!";
+            modalErrorDiv.style.display = 'block';
+        }
+
+    } catch (err) {
+        modalErrorDiv.innerText = "Doğrulama yapılırken bir hata oluştu: " + err.message;
+        modalErrorDiv.style.display = 'block';
     }
 });
 </script>
