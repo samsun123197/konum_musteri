@@ -140,8 +140,8 @@
     <h2>Giriş Yap</h2>
     <form id="loginForm">
         <div class="form-group">
-            <label for="username">Kullanıcı Adı</label>
-            <input type="text" id="username" required>
+            <label for="username">VP Kullanıcı Kodu</label>
+            <input type="text" id="username" placeholder="Kullanıcı kodunuzu girin" required>
         </div>
         <div class="form-group">
             <label for="password">Şifre</label>
@@ -152,7 +152,7 @@
             <label for="rememberMe" style="margin-bottom: 0; cursor: pointer; user-select: none;">Beni Hatırla</label>
         </div>
         <button type="submit">Giriş</button>
-        <div id="errorMessage" class="error-message">Kullanıcı adı veya şifre hatalı!</div>
+        <div id="errorMessage" class="error-message">Kullanıcı koda veya şifre hatalı!</div>
     </form>
     
     <a href="#" class="forgot-link" id="openModalBtn">Şifre Talebinde Bulun</a>
@@ -246,7 +246,7 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
             sessionStorage.setItem('username', userInput);
             window.location.href = 'index11.html';
         } else {
-            errorDiv.innerText = "Kullanıcı adı veya şifre hatalı!";
+            errorDiv.innerText = "VP Kullanıcı Kodu veya şifre hatalı!";
             errorDiv.style.display = 'block';
         }
     } catch (err) {
@@ -326,7 +326,7 @@ document.getElementById('whatsappForm').addEventListener('submit', async functio
             window.open(whatsappUrl, '_blank');
             modal.style.display = 'none';
         } else {
-            modalErrorDiv.innerText = "Girilen Kullanıcı Kodu ile Telefon Numarası eşleşmiyor!";
+            modalErrorDiv.innerText = "Girilen VP Kullanıcı Kodu ile Telefon Numarası eşleşmiyor!";
             modalErrorDiv.style.display = 'block';
         }
 
